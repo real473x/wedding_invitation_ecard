@@ -1,0 +1,71 @@
+.page {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--admin-bg);
+  color: var(--admin-text);
+  position: relative;
+  overflow: hidden;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+.bg {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 30% 40%, rgba(201,168,76,.12) 0%, transparent 60%),
+              radial-gradient(ellipse at 70% 70%, rgba(27,67,50,.15) 0%, transparent 60%);
+  pointer-events: none;
+}
+.card {
+  background: var(--admin-card-bg);
+  border: 1px solid var(--admin-border);
+  border-radius: 20px;
+  padding: 2.5rem 2rem;
+  width: 100%;
+  max-width: 400px;
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 24px 64px rgba(0,0,0,.5);
+  transition: background-color 0.25s ease, border-color 0.25s ease;
+}
+.logo { text-align: center; margin-bottom: 2rem; }
+.logoIcon { font-size: 2.5rem; display: block; margin-bottom: 0.5rem; }
+.logo h1 { font-size: 1.8rem; font-weight: 800; color: #C9A84C; letter-spacing: -0.02em; }
+.logo p { color: var(--admin-text-muted); font-size: 0.85rem; margin-top: 0.25rem; }
+.form { display: flex; flex-direction: column; gap: 0.5rem; }
+.form :global(.form-group) label { color: var(--admin-text-muted) !important; }
+.form :global(.form-control) {
+  background: var(--admin-input-bg) !important;
+  border-color: var(--admin-input-border) !important;
+  color: var(--admin-input-text) !important;
+}
+.form :global(.form-control)::placeholder { color: var(--admin-input-placeholder) !important; }
+.form :global(.form-control):focus { border-color: #C9A84C !important; box-shadow: 0 0 0 3px rgba(201,168,76,.15) !important; }
+.submitBtn { width: 100%; margin-top: 0.5rem; padding: 0.85rem; font-size: 1rem; gap: 0.5rem; }
+.error {
+  background: rgba(192,57,43,.15);
+  border: 1px solid rgba(192,57,43,.3);
+  color: #e87c6f;
+  border-radius: 8px;
+  padding: 0.65rem 0.9rem;
+  font-size: 0.85rem;
+}
+.notice {
+  background: rgba(27,67,50,.3);
+  border: 1px solid rgba(201,168,76,.3);
+  color: #C9A84C;
+  border-radius: 8px;
+  padding: 0.65rem 0.9rem;
+  font-size: 0.85rem;
+}
+.hint { text-align: center; color: var(--admin-text-muted); font-size: 0.75rem; margin-top: 0.75rem; }
+.spinner {
+  width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }

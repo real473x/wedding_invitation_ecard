@@ -1,0 +1,71 @@
+.hero {
+  background: var(--color-bg);
+  background-image: radial-gradient(ellipse at top, rgba(201,168,76,.06) 0%, transparent 60%),
+                    radial-gradient(ellipse at bottom, rgba(201,168,76,.04) 0%, transparent 60%);
+  padding: 1.5rem 1.25rem 120px;
+}
+.heroDivider {
+  margin: 0.25rem 0 !important;
+}
+.border {
+  border: 1.5px solid var(--color-border);
+  border-radius: 4px;
+  padding: 2rem 1.5rem;
+  max-width: 440px; width: 100%;
+  position: relative;
+  background: var(--color-surface);
+  box-shadow: var(--card-shadow);
+}
+/* Corner ornaments */
+.border::before, .border::after {
+  content: '✦'; position: absolute; color: var(--color-primary-light); font-size: 1rem;
+}
+.border::before { top: -0.6rem; left: 50%; transform: translateX(-50%); background: var(--color-surface); padding: 0 0.5rem; }
+.border::after  { bottom: -0.6rem; left: 50%; transform: translateX(-50%); background: var(--color-surface); padding: 0 0.5rem; }
+.inner { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 0.45rem; }
+.topDecor, .bottomDecor { display: flex; align-items: center; gap: 0.75rem; width: 100%; }
+.line { flex: 1; height: 1px; background: linear-gradient(to right, transparent, var(--color-primary-light), transparent); }
+.star { color: var(--color-primary-light); font-size: 0.7rem; flex-shrink: 0; }
+.subtitle { font-size: clamp(1rem, 3.5vw, 1.2rem); color: var(--color-primary); letter-spacing: 0.05em; margin-bottom: 0.25rem; }
+.groom, .bride {
+  font-family: var(--font-heading); font-size: clamp(1.3rem, 5vw, 1.8rem);
+  color: var(--color-text); font-weight: 700; line-height: 1.2; margin: 0;
+}
+.ampersand { font-size: clamp(1.5rem, 6vw, 2.2rem); color: var(--color-primary); }
+.dateWrap { display: flex; align-items: center; gap: 0.75rem; width: 100%; margin: 0.25rem 0; }
+.dateLine { flex: 1; height: 1px; background: var(--color-border); opacity: 0.4; }
+.dateContent { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+.dateLabel { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--color-text-muted); }
+.dateText { font-family: var(--font-heading); font-size: clamp(0.85rem, 3vw, 1rem); color: var(--color-primary); font-weight: 600; white-space: nowrap; }
+.venueWrap { display: flex; flex-direction: column; align-items: center; gap: 0.2rem; }
+.venueLabel { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--color-text-muted); }
+.venueName { font-family: var(--font-heading); font-size: clamp(1rem, 3.5vw, 1.2rem); color: var(--color-text); font-weight: 600; }
+.venueAddr { font-size: 0.8rem; color: var(--color-text-muted); }
+.quoteWrap {
+  border-left: 3px solid var(--color-primary-light);
+  text-align: left;
+  background: linear-gradient(135deg, #c9a84c0f, #c9a84c08);
+  border-radius: 0 8px 8px 0;
+  width: 100%;
+  margin-top: 1.2rem;
+  padding: .5rem .75rem;
+}
+.quote { font-style: italic; font-size: 0.85rem; color: var(--color-text-muted); line-height: 1.5; }
+.quoteSource { font-size: 0.75rem; color: var(--color-primary); margin-top: 0.25rem; font-weight: 600; }
+
+@media (max-width: 600px) {
+  .hero { padding: 0.75rem 1rem 80px; }
+  .subtitle { font-size: 0.95rem !important; }
+  .groom, .bride { font-size: 1.4rem !important; }
+  .ampersand { font-size: 1.7rem !important; }
+  .dateText { font-size: 0.9rem !important; }
+  .venueName { font-size: 1rem !important; }
+  .venueAddr { font-size: 0.78rem !important; }
+  .quote { font-size: 0.78rem !important; }
+  .quoteSource { font-size: 0.72rem !important; }
+  .border {
+    padding: 1.25rem 1.25rem !important;
+  }
+  .quoteWrap { margin-top: 0.6rem; padding: 0.35rem 0.6rem; }
+  .inner { gap: 0.3rem; }
+}

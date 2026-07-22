@@ -1,0 +1,94 @@
+{
+  "superAdmin": {
+    "passwordHash": ""
+  },
+  "couples": [
+    {
+      "id": "demo",
+      "loginId": "demo",
+      "passwordHash": "",
+      "isActive": true,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "config": {
+        "theme": "malay",
+        "backgrounds": {
+          "gate": "",
+          "invitation": "",
+          "parents": "",
+          "countdown": "",
+          "programme": "",
+          "gallery": "",
+          "message": "",
+          "closing": ""
+        },
+        "useUnifiedBackground": true,
+        "unifiedBackgroundUrl": "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&auto=format&fit=crop&q=80",
+        "sections": {
+          "gate": true,
+          "invitation": true,
+          "parents": true,
+          "countdown": true,
+          "programme": true,
+          "gallery": true,
+          "message": true,
+          "closing": true
+        },
+        "groomName": "Adam",
+        "groomFullName": "Adam bin Abdullah",
+        "brideName": "Hawa",
+        "brideFullName": "Hawa binti Ibrahim",
+        "groomFatherName": "Ahmad",
+        "groomMotherName": "Fatimah",
+        "brideFatherName": "Ibrahim",
+        "brideMotherName": "Zainab",
+        "weddingDate": "2027-01-10",
+        "weddingDay": "Sabtu",
+        "weddingTime": "11:00 AM – 10:00 PM",
+        "receptionTime": "11:00 AM",
+        "venue": "Dewan Serbaguna",
+        "venueAddress": "Jalan Contoh, 50000 Kuala Lumpur",
+        "quote": "\"Dan di antara tanda-tanda kekuasaan-Nya ialah Dia menciptakan untukmu pasangan hidup dari jenismu sendiri...\"",
+        "quoteSource": "— Surah Ar-Rum, 30:21",
+        "coupleMessage": "Dengan penuh kerendahan hati dan rasa syukur, kami mengundang anda untuk berkongsi kebahagiaan dan berkat bersama kami pada hari yang istimewa ini.",
+        "coupleMessageTitle": "Dari Kami Berdua",
+        "closingTitle": "Terima Kasih",
+        "closingText": "Kehadiran dan doa restu anda amat kami hargai. Semoga Allah memberkati majlis dan pertemuan kita.",
+        "showClosingPhoto": false,
+        "closingPhotoUrl": "",
+        "youtubeUrl": "",
+        "showMap": true,
+        "mapEmbedUrl": "https://maps.google.com/maps?q=Kuala+Lumpur&output=embed",
+        "wazeLink": "https://waze.com/ul?q=Kuala+Lumpur",
+        "googleMapsLink": "https://maps.google.com/?q=Kuala+Lumpur",
+        "contacts": [
+          { "name": "Adam (Pengantin Lelaki)", "phone": "0123456789" },
+          { "name": "Hawa (Pengantin Perempuan)", "phone": "0198765432" }
+        ],
+        "bankName": "Bank Contoh",
+        "bankAccountName": "Adam bin Abdullah",
+        "bankAccountNo": "1234 5678 9012",
+        "bankQrUrl": "",
+        "programme": [
+          { "time": "11:00 AM", "event": "Ketibaan Tetamu" },
+          { "time": "12:00 PM", "event": "Majlis Akad Nikah" },
+          { "time": "1:00 PM", "event": "Ketibaan Pengantin" },
+          { "time": "2:00 PM", "event": "Jamuan Makan" },
+          { "time": "10:00 PM", "event": "Majlis Bersurai" }
+        ],
+        "photos": [],
+        "wishes": [],
+        "gifts": [
+          { "id": "1", "item": "Air Fryer", "link": "" },
+          { "id": "2", "item": "Set Pinggan Mangkuk Premium", "link": "" },
+          { "id": "3", "item": "Tilam King Size", "link": "" }
+        ],
+        "rsvps": []
+      },
+      "packageName": "Demo Selamanya",
+      "expiresAt": "2036-01-01T00:00:00.000Z",
+      "statusMode": "on",
+      "mustChangePassword": false
+    }
+  ],
+  "payments": []
+}
