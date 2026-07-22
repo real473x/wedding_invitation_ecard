@@ -2,6 +2,27 @@
 
 A modern, full-featured digital wedding invitation platform built with **Next.js 15**. Create beautiful, mobile-first wedding invitation cards with RSVP, gift registry, guest management, and a powerful admin panel — all in Bahasa Melayu.
 
+## 📸 Preview
+
+<!-- Replace the placeholder paths below with your actual screenshot filenames -->
+![Preview](images/01.png)
+![Preview](images/02.png)
+![Preview](images/1.png)
+![Preview](images/2.png)
+![Preview](images/3.png)
+![Preview](images/4.png)
+![Preview](images/5.png)
+![Preview](images/6.png)
+![Preview](images/7.png)
+![Preview](images/8.png)
+![Preview](images/9.png)
+![Preview](images/10.png)
+![Preview](images/11.png)
+![Preview](images/12.png)
+![Preview](images/13.png)
+
+
+
 ## ✨ Features
 
 ### 🎉 Guest-Facing Invitation
