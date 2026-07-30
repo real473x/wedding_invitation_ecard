@@ -25,7 +25,7 @@ A modern, full-featured digital wedding invitation platform built with **Next.js
 
 ## ✨ Features
 
-### 🎉 Guest-Facing Invitation
+### 🎉 eCard Invitation
 - **Gate Screen** — Animated cover page with couple names
 - **Invitation Hero** — Elegant wedding card with event details
 - **Parents Section** — Family names with beautiful typography
@@ -44,7 +44,7 @@ A modern, full-featured digital wedding invitation platform built with **Next.js
 - **Price Scraper** — Auto-extract prices from product URLs
 - Full-screen lightbox photo viewer
 
-### 💰 Money Gift (Sumbangan)
+### 💰 Money Gift
 - Bank account details with QR code support
 - Direct QR image upload from device
 
@@ -52,7 +52,7 @@ A modern, full-featured digital wedding invitation platform built with **Next.js
 - Guest RSVP with attendance confirmation and pax count
 - Real-time RSVP statistics in admin panel
 
-### 🔧 Admin Panel (`/admin`)
+### 🔧 Admin Panel | Couple Panel (`/admin`)
 - Full wedding configuration editor
 - Theme customization
 - Section visibility toggles
@@ -67,10 +67,10 @@ A modern, full-featured digital wedding invitation platform built with **Next.js
 - Credential management & password reset
 
 ## 🆕 Recent Updates
-- **Comprehensive Text Editability**: 100% of live invitation screen texts (Parents, Hero Date/Venue, Gallery, Countdown) are now exposed for editing via the admin dictionary, allowing full localization (e.g., custom Bidayuh language overrides).
-- **Advanced Financial Tracker**: Full CRUD functionality added to the Super Admin financial report (Edit & Delete capabilities with auto-calculating totals).
-- **Teks Global UI Overhaul**: Super Admin text settings revamped with a responsive grid layout, auto-resizing textareas, override toggle switches, and a dedicated 'Default' reset button.
-- **Antigravity IDE Theme & Light Mode Stability**: Adopted a sleek, high-contrast dark-grey aesthetic. Refactored hundreds of inline CSS colors into dynamic variables, ensuring flawless text visibility and contrast across both Dark and Light themes.
+- **Comprehensive Text Editability**: 100% of live invitation screen texts (Parents, Hero Date/Venue, Gallery, Countdown) are now exposed for editing via the admin dictionary, allowing full localization
+- **Updated Financial Tracker**: Full CRUD functionality added.
+- **Texts Global UI Overhaul**: Super Admin text settings revamped with a responsive grid layout, auto-resizing textareas, override toggle switches, and a dedicated 'Default' reset button.
+- **Enchance UI Theme**: Adopted a sleek, high-contrast dark-grey aesthetic. Refactored hundreds of inline CSS colors into dynamic variables, ensuring flawless text visibility and contrast across both Dark and Light themes.
 - **Language Toggle Removal**: Streamlined the admin interface by removing the `en|ms` toggle from the dashboards and login pages.
 
 ## 🚀 Getting Started
