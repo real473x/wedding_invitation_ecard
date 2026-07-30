@@ -5,8 +5,8 @@ A modern, full-featured digital wedding invitation platform built with **Next.js
 ## 📸 Preview
 
 <!-- Replace the placeholder paths below with your actual screenshot filenames -->
-![Preview](images/New%20Ver/panel mode.gif)
-![Preview](images/New%20Ver/live website.gif)
+![Preview](images/New%20Ver/panel%20mode.gif)
+![Preview](images/New%20Ver/live%20website.gif)
 
 ## ✨ Features
 
@@ -144,6 +144,9 @@ This project is free for **non-commercial use only**. Any commercial use, redist
 
 ## 📸 Screen Shot 
 **Panel**
+<details>
+<summary>Click to expand Panel Screenshots</summary>
+
 ![Preview](images/New%20Ver/1.png)
 ![Preview](images/New%20Ver/2.png)
 ![Preview](images/New%20Ver/3.png)
@@ -160,8 +163,12 @@ This project is free for **non-commercial use only**. Any commercial use, redist
 ![Preview](images/New%20Ver/14.png)
 ![Preview](images/New%20Ver/15.png)
 ![Preview](images/New%20Ver/16.png)
+</details>
 
 **Live Web**
+<details>
+<summary>Click to expand Live Web Screenshots</summary>
+
 ![Preview](images/New%20Ver/L1.png)
 ![Preview](images/New%20Ver/L2.png)
 ![Preview](images/New%20Ver/L3.png)
@@ -177,3 +184,4 @@ This project is free for **non-commercial use only**. Any commercial use, redist
 ![Preview](images/New%20Ver/L13.png)
 ![Preview](images/New%20Ver/L14.png)
 ![Preview](images/New%20Ver/L15.png)
+</details>
