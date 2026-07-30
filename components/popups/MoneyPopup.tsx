@@ -2,15 +2,17 @@
 import { useState } from 'react';
 import { WeddingConfig } from '@/lib/db';
 
-import { INVITATION_DICT, Lang } from '@/lib/i18n';
+import { INVITATION_DICT, Lang, getInvitationText } from '@/lib/i18n';
 
-interface Props { config: WeddingConfig; onClose: () => void; lang?: Lang; }
+interface Props { config: WeddingConfig; onClose: () => void; lang?: Lang; textOverrides?: Record<string, string>; }
 
 const QR_PLACEHOLDER = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDE1MCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjE1MCIgeD0iMCIgeT0iMCIgZmlsbD0iI2Y1ZjVmNSIgcng9IjgiLz48dGV4dCB4PSI3NSIgeT0iNjUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM5OTkiIGZvbnQtc2l6ZT0iMjgiPvwn5GJ8J+RiTwvdGV4dD48dGV4dCB4PSI3NSIgeT0iOTAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiNiYmIiIGZvbnQtc2l6ZT0iMTEiPlFSIENvZGU8L3RleHQ+PHRleHQgeD0iNzUiIHk9IjExMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI2NjYyIgZm9udC1zaXplPSI5Ij5QbGFjZWhvbGRlcjwvdGV4dD48L3N2Zz4=';
 
-export default function MoneyPopup({ config, onClose, lang }: Props) {
+export default function MoneyPopup({ config, onClose, lang, textOverrides }: Props) {
+  const [copied, setCopied] = useState(false);
+
   const currentLang: Lang = lang || config.language || 'ms';
-  const t = INVITATION_DICT[currentLang];
+  const t = getInvitationText(currentLang, textOverrides);
   const qrSrc = config.bankQrUrl || QR_PLACEHOLDER;
   const [showHearts, setShowHearts] = useState(false);
   const [hearts, setHearts] = useState<{ id: number; left: number; delay: number }[]>([]);

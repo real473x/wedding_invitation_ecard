@@ -26,11 +26,11 @@ function useCountdown(targetDate: string) {
   return time;
 }
 
-import { INVITATION_DICT, Lang } from '@/lib/i18n';
+import { INVITATION_DICT, Lang, getInvitationText } from '@/lib/i18n';
 
-export default function CountdownSection({ config, style, lang }: { config: WeddingConfig; style?: React.CSSProperties; lang?: Lang }) {
+export default function CountdownSection({ config, style, lang, textOverrides }: { config: WeddingConfig; style?: React.CSSProperties; lang?: Lang; textOverrides?: Record<string, string> }) {
   const currentLang: Lang = lang || config.language || 'ms';
-  const t = INVITATION_DICT[currentLang];
+  const t = getInvitationText(currentLang, textOverrides);
   const countdown = useCountdown(config.weddingDate);
   const dateObj = config.weddingDate ? new Date(config.weddingDate + 'T00:00:00') : null;
   const dayNum = dateObj ? dateObj.getDate() : '';
@@ -53,7 +53,7 @@ export default function CountdownSection({ config, style, lang }: { config: Wedd
 
         {/* Countdown */}
         {countdown.passed ? (
-          <div className={styles.passed}>🎉 {currentLang === 'en' ? 'The event has taken place!' : 'Majlis telah berlangsung!'}</div>
+          <div className={styles.passed}>🎉 {t.countdownEventPassed}</div>
         ) : (
           <div className={styles.countdown}>
             {[

@@ -28,10 +28,11 @@ export function getYouTubeEmbedUrl(url: string): string {
   return url;
 }
 
-import { Lang } from '@/lib/i18n';
+import { Lang, getInvitationText } from '@/lib/i18n';
 
-export default function ClosingScreen({ config, style, lang }: { config: WeddingConfig; style?: React.CSSProperties; lang?: Lang }) {
+export default function ClosingScreen({ config, style, lang, textOverrides }: { config: WeddingConfig; style?: React.CSSProperties; lang?: Lang; textOverrides?: Record<string, string> }) {
   const currentLang: Lang = lang || config.language || 'ms';
+  const t = getInvitationText(currentLang, textOverrides);
   const [isMusicExpanded, setIsMusicExpanded] = useState(false);
   const rawUrl = config.youtubeUrl;
   const embedUrl = getYouTubeEmbedUrl(rawUrl);

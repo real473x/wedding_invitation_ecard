@@ -4,21 +4,22 @@ import { useRouter } from 'next/navigation';
 import { WeddingConfig, ProgrammeItem, Gift, Contact, RSVP, Wish } from '@/lib/db';
 import styles from './admin.module.css';
 import { v4 as uuidv4 } from 'uuid';
-import { ADMIN_DICT, Lang, formatPackageName } from '@/lib/i18n';
+import { ADMIN_DICT, Lang, formatPackageName, INVITATION_DICT, INVITATION_TEXT_KEYS, getAdminText } from '@/lib/i18n';
 
-const getTabs = (lang: Lang) => [
-  { key: 'tema', label: ADMIN_DICT[lang].tabTema },
-  { key: 'latar', label: ADMIN_DICT[lang].tabLatar },
-  { key: 'skrin', label: ADMIN_DICT[lang].tabSkrin },
-  { key: 'maklumat', label: ADMIN_DICT[lang].tabMaklumat },
-  { key: 'media', label: ADMIN_DICT[lang].tabMedia },
-  { key: 'aturcara', label: ADMIN_DICT[lang].tabAturcara },
-  { key: 'kenalan', label: ADMIN_DICT[lang].tabKenalan },
-  { key: 'lokasi', label: ADMIN_DICT[lang].tabLokasi },
-  { key: 'kewangan', label: ADMIN_DICT[lang].tabKewangan },
-  { key: 'hadiah', label: ADMIN_DICT[lang].tabHadiah },
-  { key: 'rsvp', label: ADMIN_DICT[lang].tabRsvp },
-  { key: 'akaun', label: ADMIN_DICT[lang].tabAkaun },
+const getTabs = (t: Record<string, string>) => [
+  { key: 'tema', label: t.tabTema },
+  { key: 'latar', label: t.tabLatar },
+  { key: 'skrin', label: t.tabSkrin },
+  { key: 'teks', label: t.tabTeks },
+  { key: 'maklumat', label: t.tabMaklumat },
+  { key: 'media', label: t.tabMedia },
+  { key: 'aturcara', label: t.tabAturcara },
+  { key: 'kenalan', label: t.tabKenalan },
+  { key: 'lokasi', label: t.tabLokasi },
+  { key: 'kewangan', label: t.tabKewangan },
+  { key: 'hadiah', label: t.tabHadiah },
+  { key: 'rsvp', label: t.tabRsvp },
+  { key: 'akaun', label: t.tabAkaun },
 ];
 
 const THEMES = [
@@ -134,6 +135,24 @@ export default function CoupleAdminPage() {
     document.documentElement.setAttribute('data-theme', savedTheme);
   }, []);
 
+  const [globalTextOverrides, setGlobalTextOverrides] = useState<Record<string, string>>({});
+
+  const fetchGlobalText = useCallback(async () => {
+    try {
+      const res = await fetch('/api/config/global');
+      if (res.ok) {
+        const data = await res.json();
+        setGlobalTextOverrides(data.globalTextOverrides || {});
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchGlobalText();
+  }, [fetchGlobalText]);
+
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark';
     setTheme(next);
@@ -147,8 +166,8 @@ export default function CoupleAdminPage() {
     localStorage.setItem('admin-lang', next);
   };
 
-  const t = ADMIN_DICT[lang];
-  const TABS = getTabs(lang);
+  const t = getAdminText(lang, globalTextOverrides);
+  const TABS = getTabs(t);
 
   async function handleQrUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -259,14 +278,7 @@ export default function CoupleAdminPage() {
           </div>
         </div>
         <div className={styles.headerRight}>
-          <button 
-            onClick={toggleLang} 
-            className={`btn btn-sm ${styles.logoutBtn}`}
-            style={{ marginRight: '0.25rem' }}
-            title="Tukar Bahasa Admin Panel / Change Language"
-          >
-            🌐 {lang.toUpperCase()}
-          </button>
+
           <button 
             onClick={toggleTheme} 
             className={`btn btn-sm ${styles.logoutBtn}`}
@@ -320,9 +332,9 @@ export default function CoupleAdminPage() {
               <p className={styles.sectionHint}>{lang === 'en' ? 'Choose a background image for each section. Upload a file, enter a URL, or pick from theme presets.' : 'Pilih gambar latar belakang untuk setiap bahagian. Boleh muat naik fail, masukkan URL, atau pilih daripada koleksi tema yang tersedia.'}</p>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--admin-border)', borderRadius: '14px' }}>
                   <div style={{ flex: 1, paddingRight: '1rem' }}>
-                    <h4 style={{ color: '#fff', fontSize: '0.95rem', fontWeight: 600, margin: 0 }}>{lang === 'en' ? 'Use 1 Background Image for All Sections' : 'Guna 1 Latar Belakang untuk Semua Skrin'}</h4>
+                    <h4 style={{ color: 'var(--admin-text)', fontSize: '0.95rem', fontWeight: 600, margin: 0 }}>{lang === 'en' ? 'Use 1 Background Image for All Sections' : 'Guna 1 Latar Belakang untuk Semua Skrin'}</h4>
                     <p style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem', margin: '0.2rem 0 0 0', lineHeight: 1.4 }}>{lang === 'en' ? 'Enable this setting to display a single fixed image across all invitation sections (except gate screen).' : 'Aktifkan tetapan ini untuk memaparkan satu imej yang sama yang tidak bergerak (fixed) merentasi semua bahagian jemputan (kecuali skrin pembuka).'}</p>
                   </div>
                   <label className="toggle-switch" style={{ flexShrink: 0 }}>
@@ -344,7 +356,7 @@ export default function CoupleAdminPage() {
                 )}
 
                 <div style={{ opacity: config.useUnifiedBackground ? 0.45 : 1, pointerEvents: config.useUnifiedBackground ? 'none' : 'auto', transition: 'all .25s ease' }}>
-                  <h4 style={{ color: '#fff', fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.75rem', marginTop: 0 }}>
+                  <h4 style={{ color: 'var(--admin-text)', fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.75rem', marginTop: 0 }}>
                     {lang === 'en' ? 'Individual Screen Backgrounds' : 'Latar Belakang Setiap Skrin Individu'}
                   </h4>
                   {config.useUnifiedBackground && (
@@ -386,6 +398,122 @@ export default function CoupleAdminPage() {
               </div>
             </Section>
           )}
+          {/* ── TEKS (Text Overrides) ── */}
+          {activeTab === 'teks' && (
+            <Section title={t.textOverridesSection}>
+              <p style={{ color: 'var(--admin-text-muted)', fontSize: '0.82rem', marginBottom: '1.5rem', lineHeight: 1.6 }}>{t.textOverridesDesc}</p>
+              {INVITATION_TEXT_KEYS.map(group => {
+                const groupLabel = (t as Record<string, string>)[group.group] || group.group;
+                return (
+                  <div key={group.group} style={{ marginBottom: '1.5rem' }}>
+                    <h4 style={{ color: 'var(--admin-text)', fontSize: '0.88rem', fontWeight: 700, marginBottom: '0.75rem', borderBottom: '1px solid var(--admin-border)', paddingBottom: '0.5rem' }}>{groupLabel}</h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.75rem' }}>
+                      {group.group === 'textGroupGate' && (
+                        <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                          <label style={{ color: 'var(--admin-text-muted)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            {lang === 'en' ? 'Date Text (Gate Screen)' : 'Teks Tarikh (Skrin Pembukaan)'}
+                            <label className="toggle-switch" style={{ transform: 'scale(0.7)', margin: 0 }}>
+                              <input type="checkbox" checked={config.textOverrides?.hasOwnProperty('gateDate')} onChange={e => {
+                                const newOverrides = { ...(config.textOverrides || {}) };
+                                if (e.target.checked) {
+                                  newOverrides.gateDate = '';
+                                } else {
+                                  delete newOverrides.gateDate;
+                                }
+                                update({ textOverrides: newOverrides });
+                              }} />
+                              <span className="toggle-slider" />
+                            </label>
+                          </label>
+                          {config.textOverrides?.hasOwnProperty('gateDate') ? (
+                            <input
+                              className="form-control"
+                              placeholder={lang === 'en' ? "E.g. Saturday, 26 September 2026" : "Cth. Sabtu, 26 September 2026"}
+                              value={config.textOverrides.gateDate || ''}
+                              onChange={e => {
+                                const newOverrides = { ...(config.textOverrides || {}) };
+                                newOverrides.gateDate = e.target.value;
+                                update({ textOverrides: newOverrides });
+                              }}
+                              style={{ background: 'var(--admin-input-bg)', borderColor: config.textOverrides.gateDate ? 'rgba(201,168,76,0.4)' : 'rgba(255,255,255,.08)', color: 'var(--admin-text)', fontSize: '0.85rem' }}
+                            />
+                          ) : (
+                            <div style={{ padding: '0.65rem 0.85rem', background: 'var(--admin-stat-bg)', borderRadius: '10px', color: 'var(--admin-text-muted)', fontSize: '0.85rem' }}>
+                              {config.weddingDay}, {config.weddingDate ? new Date(config.weddingDate + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ms-MY', { day: 'numeric', month: 'long', year: 'numeric' }) : ''} <span style={{ fontSize: '0.7rem', fontStyle: 'italic', marginLeft: '0.5rem' }}>(Auto)</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {group.group === 'textGroupHero' && (
+                        <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                          <label style={{ color: 'var(--admin-text-muted)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            {lang === 'en' ? 'Date Text (Hero Screen)' : 'Teks Tarikh (Kad Jemputan)'}
+                            <label className="toggle-switch" style={{ transform: 'scale(0.7)', margin: 0 }}>
+                              <input type="checkbox" checked={config.textOverrides?.hasOwnProperty('heroDate')} onChange={e => {
+                                const newOverrides = { ...(config.textOverrides || {}) };
+                                if (e.target.checked) {
+                                  newOverrides.heroDate = '';
+                                } else {
+                                  delete newOverrides.heroDate;
+                                }
+                                update({ textOverrides: newOverrides });
+                              }} />
+                              <span className="toggle-slider" />
+                            </label>
+                          </label>
+                          {config.textOverrides?.hasOwnProperty('heroDate') ? (
+                            <input
+                              className="form-control"
+                              placeholder={lang === 'en' ? "E.g. Saturday, 26 September 2026" : "Cth. Sabtu, 26 September 2026"}
+                              value={config.textOverrides.heroDate || ''}
+                              onChange={e => {
+                                const newOverrides = { ...(config.textOverrides || {}) };
+                                newOverrides.heroDate = e.target.value;
+                                update({ textOverrides: newOverrides });
+                              }}
+                              style={{ background: 'var(--admin-input-bg)', borderColor: config.textOverrides.heroDate ? 'rgba(201,168,76,0.4)' : 'rgba(255,255,255,.08)', color: 'var(--admin-text)', fontSize: '0.85rem' }}
+                            />
+                          ) : (
+                            <div style={{ padding: '0.65rem 0.85rem', background: 'var(--admin-stat-bg)', borderRadius: '10px', color: 'var(--admin-text-muted)', fontSize: '0.85rem' }}>
+                              {config.weddingDate ? new Date(config.weddingDate + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ms-MY', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : ''} <span style={{ fontSize: '0.7rem', fontStyle: 'italic', marginLeft: '0.5rem' }}>(Auto)</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {group.keys.map(key => {
+                        const defaultVal = INVITATION_DICT[config.language || 'ms'][key as keyof typeof INVITATION_DICT['ms']] || '';
+                        const currentVal = config.textOverrides?.[key] || '';
+                        return (
+                          <div key={key} className="form-group">
+                            <label style={{ color: 'var(--admin-text-muted)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 600 }}>{key}</label>
+                            <input
+                              className="form-control"
+                              placeholder={String(defaultVal)}
+                              value={currentVal}
+                              onChange={e => {
+                                const val = e.target.value;
+                                const newOverrides = { ...(config.textOverrides || {}) };
+                                if (val) {
+                                  newOverrides[key] = val;
+                                } else {
+                                  delete newOverrides[key];
+                                }
+                                update({ textOverrides: newOverrides });
+                              }}
+                              style={{ background: 'var(--admin-input-bg)', borderColor: currentVal ? 'rgba(201,168,76,0.4)' : 'rgba(255,255,255,.08)', color: 'var(--admin-text)', fontSize: '0.85rem' }}
+                            />
+                            {currentVal && (
+                              <span style={{ fontSize: '0.65rem', color: '#C9A84C', marginTop: '2px', display: 'block' }}>✎ {lang === 'en' ? 'Custom' : 'Kustom'}</span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </Section>
+          )}
 
           {/* ── MAKLUMAT ── */}
           {activeTab === 'maklumat' && (
@@ -394,7 +522,7 @@ export default function CoupleAdminPage() {
                 <div style={{ gridColumn: 'span 2', background: 'rgba(201,168,76,0.08)', borderRadius: '12px', padding: '1rem', border: '1px solid rgba(201,168,76,0.2)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
                   <div>
                     <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#C9A84C', fontWeight: 700 }}>🌐 {t.websiteLang}</h4>
-                    <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.78rem', color: '#94a3b8' }}>{lang === 'en' ? 'Select default primary language for guest invitation card (Bahasa Melayu / English).' : 'Pilih bahasa utama untuk paparan kad jemputan tetamu (Bahasa Melayu / English).'}</p>
+                    <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.78rem', color: 'var(--admin-text-muted)' }}>{lang === 'en' ? 'Select default primary language for guest invitation card (Bahasa Melayu / English).' : 'Pilih bahasa utama untuk paparan kad jemputan tetamu (Bahasa Melayu / English).'}</p>
                   </div>
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <button
@@ -436,21 +564,21 @@ export default function CoupleAdminPage() {
                 <Field label={lang === 'en' ? 'Closing Screen Title' : 'Tajuk Skrin Penutup'} value={config.closingTitle} onChange={v => update({ closingTitle: v })} />
                 <Field label={lang === 'en' ? 'Closing Text' : 'Teks Penutup'} value={config.closingText} onChange={v => update({ closingText: v })} textarea />
                 
-                <div style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: '0.65rem', marginTop: '0.5rem', background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                <div style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: '0.65rem', marginTop: '0.5rem', background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '12px', border: '1px solid var(--admin-border)' }}>
                   <label className="checkbox-container" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', margin: 0 }}>
                     <input
                       type="checkbox"
                       checked={config.showClosingPhoto !== false}
                       onChange={e => update({ showClosingPhoto: e.target.checked })}
                     />
-                    <span style={{ fontSize: '0.85rem', color: '#f8fafc', fontWeight: 600 }}>{lang === 'en' ? 'Display Couple Photo on Closing Screen' : 'Tampilkan Gambar Pasangan di Skrin Penutup'}</span>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--admin-text)', fontWeight: 600 }}>{lang === 'en' ? 'Display Couple Photo on Closing Screen' : 'Tampilkan Gambar Pasangan di Skrin Penutup'}</span>
                   </label>
                   
                   {config.showClosingPhoto !== false && (
                     <div style={{ background: 'rgba(0,0,0,0.25)', borderRadius: '10px', padding: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', marginTop: '0.25rem' }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <span style={{ fontSize: '0.72rem', color: '#94a3b8', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{lang === 'en' ? 'Couple Photo' : 'Gambar Pasangan'}</span>
-                        <span style={{ fontSize: '0.75rem', color: '#cbd5e1', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{lang === 'en' ? 'Couple Photo' : 'Gambar Pasangan'}</span>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
                           {config.closingPhotoUrl ? `✓ ${lang === 'en' ? 'File' : 'Fail'}: ${config.closingPhotoUrl.split('/').pop()}` : (lang === 'en' ? 'Using Default Placeholder' : 'Menggunakan Placeholder Lalai')}
                         </span>
                       </div>
@@ -564,12 +692,12 @@ export default function CoupleAdminPage() {
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={config.bankQrUrl} alt="QR Code" style={{ width: 44, height: 44, borderRadius: '6px', objectFit: 'contain', border: '1px solid rgba(255,255,255,0.1)' }} />
                     ) : (
-                      <div style={{ width: 44, height: 44, borderRadius: '6px', background: 'rgba(255,255,255,0.05)', border: '1px dashed rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
+                      <div style={{ width: 44, height: 44, borderRadius: '6px', background: 'var(--admin-input-bg)', border: '1px dashed rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
                         📷
                       </div>
                     )}
                     <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <label className="btn btn-sm" style={{ cursor: 'pointer', margin: 0, padding: '0.35rem 0.75rem', fontSize: '0.7rem', display: 'inline-flex', background: 'var(--color-primary)', color: '#fff', border: 'none' }}>
+                      <label className="btn btn-sm" style={{ cursor: 'pointer', margin: 0, padding: '0.35rem 0.75rem', fontSize: '0.7rem', display: 'inline-flex', background: 'var(--color-primary)', color: 'var(--admin-text)', border: 'none' }}>
                         {uploadingQr ? 'Memuat naik...' : '📁 Pilih Fail Gambar'}
                         <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleQrUpload} disabled={uploadingQr} />
                       </label>
@@ -624,7 +752,7 @@ export default function CoupleAdminPage() {
         <div className="popup-overlay" style={{ zIndex: 10000, background: 'rgba(15, 17, 23, 0.94)' }}>
           <div style={{ background: '#1a1d27', border: '1px solid rgba(255,255,255,.12)', borderRadius: '20px', width: '100%', maxWidth: '440px', padding: '2rem', boxShadow: '0 24px 64px rgba(0,0,0,.6)', margin: '1rem', textAlign: 'left' }}>
             <h3 style={{ color: '#C9A84C', fontSize: '1.25rem', marginBottom: '0.5rem', fontWeight: 800 }}>🔐 Wajib Tukar Kata Laluan Semasa</h3>
-            <p style={{ color: '#cbd5e1', fontSize: '0.85rem', marginBottom: '1.5rem', lineHeight: '1.6' }}>
+            <p style={{ color: 'var(--admin-text-muted)', fontSize: '0.85rem', marginBottom: '1.5rem', lineHeight: '1.6' }}>
               Bagi menjamin keselamatan laman web anda, sila tukar kata laluan sementara yang diberikan oleh pentadbir sebelum memulakan tetapan.
             </p>
             <CouplePasswordChangeForm
@@ -688,38 +816,38 @@ function CoupleAccountTab({ packageName, expiresAt, daysRemaining, statusMode }:
   return (
     <div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
-        <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', padding: '1.25rem' }}>
-          <span style={{ fontSize: '0.72rem', color: '#94a3b8', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Pakej Langganan</span>
+        <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--admin-border)', borderRadius: '14px', padding: '1.25rem' }}>
+          <span style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Pakej Langganan</span>
           <strong style={{ fontSize: '1.15rem', color: '#C9A84C', display: 'block', marginTop: '0.25rem' }}>{packageName || '30 Hari'}</strong>
         </div>
-        <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', padding: '1.25rem' }}>
-          <span style={{ fontSize: '0.72rem', color: '#94a3b8', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tarikh Tamat Tempoh</span>
-          <strong style={{ fontSize: '1.1rem', color: '#f8fafc', display: 'block', marginTop: '0.25rem' }}>
+        <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--admin-border)', borderRadius: '14px', padding: '1.25rem' }}>
+          <span style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tarikh Tamat Tempoh</span>
+          <strong style={{ fontSize: '1.1rem', color: 'var(--admin-text)', display: 'block', marginTop: '0.25rem' }}>
             {expiresAt ? new Date(expiresAt).toLocaleDateString('ms-MY', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'}
           </strong>
         </div>
-        <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', padding: '1.25rem' }}>
-          <span style={{ fontSize: '0.72rem', color: '#94a3b8', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status Laman Web</span>
+        <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--admin-border)', borderRadius: '14px', padding: '1.25rem' }}>
+          <span style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status Laman Web</span>
           <strong style={{ fontSize: '1.1rem', color: isExpired ? '#ef4444' : '#4ade80', display: 'block', marginTop: '0.25rem' }}>
             {statusText} {statusMode === 'auto' && daysRemaining !== null && daysRemaining > 0 && `(${daysRemaining} hari baki)`}
           </strong>
         </div>
       </div>
 
-      <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', padding: '1.5rem', maxWidth: '480px', margin: '0 auto 0 0', textAlign: 'left' }}>
-        <h3 style={{ fontSize: '0.95rem', color: '#f8fafc', marginBottom: '1.25rem', fontWeight: 700 }}>🔐 Tukar Kata Laluan Panel</h3>
+      <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--admin-border)', borderRadius: '16px', padding: '1.5rem', maxWidth: '480px', margin: '0 auto 0 0', textAlign: 'left' }}>
+        <h3 style={{ fontSize: '0.95rem', color: 'var(--admin-text)', marginBottom: '1.25rem', fontWeight: 700 }}>🔐 Tukar Kata Laluan Panel</h3>
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div className="form-group">
-            <label style={{ color: '#cbd5e1' }}>Kata Laluan Semasa *</label>
-            <input type="password" className="form-control" style={{ background: 'rgba(255,255,255,.05)', borderColor: 'rgba(255,255,255,.1)', color: '#fff' }} value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} required />
+            <label style={{ color: 'var(--admin-text-muted)' }}>Kata Laluan Semasa *</label>
+            <input type="password" className="form-control" style={{ background: 'var(--admin-input-bg)', borderColor: 'var(--admin-border)', color: 'var(--admin-text)' }} value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} required />
           </div>
           <div className="form-group">
-            <label style={{ color: '#cbd5e1' }}>Kata Laluan Baru *</label>
-            <input type="password" className="form-control" style={{ background: 'rgba(255,255,255,.05)', borderColor: 'rgba(255,255,255,.1)', color: '#fff' }} value={newPassword} onChange={e => setNewPassword(e.target.value)} required />
+            <label style={{ color: 'var(--admin-text-muted)' }}>Kata Laluan Baru *</label>
+            <input type="password" className="form-control" style={{ background: 'var(--admin-input-bg)', borderColor: 'var(--admin-border)', color: 'var(--admin-text)' }} value={newPassword} onChange={e => setNewPassword(e.target.value)} required />
           </div>
           <div className="form-group">
-            <label style={{ color: '#cbd5e1' }}>Sahkan Kata Laluan Baru *</label>
-            <input type="password" className="form-control" style={{ background: 'rgba(255,255,255,.05)', borderColor: 'rgba(255,255,255,.1)', color: '#fff' }} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required />
+            <label style={{ color: 'var(--admin-text-muted)' }}>Sahkan Kata Laluan Baru *</label>
+            <input type="password" className="form-control" style={{ background: 'var(--admin-input-bg)', borderColor: 'var(--admin-border)', color: 'var(--admin-text)' }} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required />
           </div>
 
           {error && <div style={{ color: '#e87c6f', fontSize: '0.85rem', background: 'rgba(192,57,43,.1)', padding: '0.65rem 0.9rem', borderRadius: '8px' }}>{error}</div>}
@@ -768,16 +896,16 @@ function CouplePasswordChangeForm({ onSuccess }: { onSuccess: () => void }) {
   return (
     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       <div className="form-group">
-        <label style={{ color: '#cbd5e1' }}>Kata Laluan Sementara *</label>
-        <input type="password" className="form-control" style={{ background: 'rgba(255,255,255,.05)', borderColor: 'rgba(255,255,255,.1)', color: '#fff' }} value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} required />
+        <label style={{ color: 'var(--admin-text-muted)' }}>Kata Laluan Sementara *</label>
+        <input type="password" className="form-control" style={{ background: 'var(--admin-input-bg)', borderColor: 'var(--admin-border)', color: 'var(--admin-text)' }} value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} required />
       </div>
       <div className="form-group">
-        <label style={{ color: '#cbd5e1' }}>Kata Laluan Baru *</label>
-        <input type="password" className="form-control" style={{ background: 'rgba(255,255,255,.05)', borderColor: 'rgba(255,255,255,.1)', color: '#fff' }} value={newPassword} onChange={e => setNewPassword(e.target.value)} required />
+        <label style={{ color: 'var(--admin-text-muted)' }}>Kata Laluan Baru *</label>
+        <input type="password" className="form-control" style={{ background: 'var(--admin-input-bg)', borderColor: 'var(--admin-border)', color: 'var(--admin-text)' }} value={newPassword} onChange={e => setNewPassword(e.target.value)} required />
       </div>
       <div className="form-group">
-        <label style={{ color: '#cbd5e1' }}>Sahkan Kata Laluan Baru *</label>
-        <input type="password" className="form-control" style={{ background: 'rgba(255,255,255,.05)', borderColor: 'rgba(255,255,255,.1)', color: '#fff' }} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required />
+        <label style={{ color: 'var(--admin-text-muted)' }}>Sahkan Kata Laluan Baru *</label>
+        <input type="password" className="form-control" style={{ background: 'var(--admin-input-bg)', borderColor: 'var(--admin-border)', color: 'var(--admin-text)' }} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required />
       </div>
 
       {error && <div style={{ color: '#e87c6f', fontSize: '0.85rem', background: 'rgba(192,57,43,.1)', padding: '0.65rem 0.9rem', borderRadius: '8px' }}>{error}</div>}
@@ -868,7 +996,7 @@ function PhotoUrlManager({ photos, onChange }: { photos: string[]; onChange: (p:
       {photos.length > 0 && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: '0.75rem' }}>
           {photos.map((url, i) => (
-            <div key={i} style={{ position: 'relative', aspectRatio: '1', borderRadius: '8px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.2)' }}>
+            <div key={i} style={{ position: 'relative', aspectRatio: '1', borderRadius: '8px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', background: 'var(--admin-stat-bg)' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={url} alt={`Galeri ${i+1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               <button 
@@ -879,7 +1007,7 @@ function PhotoUrlManager({ photos, onChange }: { photos: string[]; onChange: (p:
                   top: '4px',
                   right: '4px',
                   background: 'rgba(239, 68, 68, 0.85)',
-                  color: '#fff',
+                  color: 'var(--admin-text)',
                   border: 'none',
                   borderRadius: '50%',
                   width: '18px',
@@ -920,7 +1048,7 @@ function PhotoUrlManager({ photos, onChange }: { photos: string[]; onChange: (p:
 
       {/* Raw URLs input */}
       <div className="form-group" style={{ marginTop: '0.5rem' }}>
-        <label style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Atau masukkan pautan URL gambar secara manual (satu pautan setiap baris):</label>
+        <label style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)' }}>Atau masukkan pautan URL gambar secara manual (satu pautan setiap baris):</label>
         <textarea 
           className="form-control" 
           rows={4} 
@@ -1129,7 +1257,7 @@ function GiftItemCard({ gift, index, onUpdate, onRemove }: {
   return (
     <div style={{
       background: 'rgba(255,255,255,0.03)',
-      border: '1px solid rgba(255,255,255,0.08)',
+      border: '1px solid var(--admin-border)',
       borderRadius: '12px',
       padding: '1rem',
       position: 'relative',
@@ -1144,7 +1272,7 @@ function GiftItemCard({ gift, index, onUpdate, onRemove }: {
 
       {/* Name input (Full Width) */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-        <label style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Nama Hadiah *</label>
+        <label style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)' }}>Nama Hadiah *</label>
         <input
           className="form-control"
           placeholder="cth: Khind Air Fryer"
@@ -1159,7 +1287,7 @@ function GiftItemCard({ gift, index, onUpdate, onRemove }: {
         {/* Link input with gear settings */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <label style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Link Kedai (Pilihan)</label>
+            <label style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)' }}>Link Kedai (Pilihan)</label>
             {gift.link && gift.link.startsWith('http') && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                 <button
@@ -1183,7 +1311,7 @@ function GiftItemCard({ gift, index, onUpdate, onRemove }: {
                   {scrapeStatus === 'success' && '✅'}
                   {scrapeStatus === 'error' && '❌'}
                 </button>
-                <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>|</span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)' }}>|</span>
                 <button
                   type="button"
                   style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: '0.85rem' }}
@@ -1203,7 +1331,7 @@ function GiftItemCard({ gift, index, onUpdate, onRemove }: {
           />
           {showSettings && gift.link && gift.link.startsWith('http') && (
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.15rem' }}>
-              <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.65rem', color: '#94a3b8', cursor: 'pointer', margin: 0 }}>
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.65rem', color: 'var(--admin-text-muted)', cursor: 'pointer', margin: 0 }}>
                 <input
                   type="checkbox"
                   checked={useFallback}
@@ -1219,7 +1347,7 @@ function GiftItemCard({ gift, index, onUpdate, onRemove }: {
         {/* Price input with gear settings */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <label style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Harga (RM / Pilihan)</label>
+            <label style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)' }}>Harga (RM / Pilihan)</label>
             {gift.link && gift.link.startsWith('http') && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                 <button
@@ -1243,7 +1371,7 @@ function GiftItemCard({ gift, index, onUpdate, onRemove }: {
                   {scrapePriceStatus === 'success' && '✅'}
                   {scrapePriceStatus === 'error' && '❌'}
                 </button>
-                <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>|</span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)' }}>|</span>
                 <button
                   type="button"
                   style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: '0.85rem' }}
@@ -1263,7 +1391,7 @@ function GiftItemCard({ gift, index, onUpdate, onRemove }: {
           />
           {showPriceSettings && gift.link && gift.link.startsWith('http') && (
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.15rem' }}>
-              <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.65rem', color: '#94a3b8', cursor: 'pointer', margin: 0 }}>
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.65rem', color: 'var(--admin-text-muted)', cursor: 'pointer', margin: 0 }}>
                 <input
                   type="checkbox"
                   checked={usePriceFallback}
@@ -1282,12 +1410,12 @@ function GiftItemCard({ gift, index, onUpdate, onRemove }: {
           // eslint-disable-next-line @next/next/no-img-element
           <img src={gift.imageUrl} alt={gift.item || 'Hadiah'} style={{ width: 44, height: 44, borderRadius: '6px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.1)' }} />
         ) : (
-          <div style={{ width: 44, height: 44, borderRadius: '6px', background: 'rgba(255,255,255,0.05)', border: '1px dashed rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
+          <div style={{ width: 44, height: 44, borderRadius: '6px', background: 'var(--admin-input-bg)', border: '1px dashed rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
             🎁
           </div>
         )}
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <label className="btn btn-sm" style={{ cursor: 'pointer', margin: 0, padding: '0.35rem 0.75rem', fontSize: '0.7rem', display: 'inline-flex', background: 'var(--color-primary)', color: '#fff', border: 'none' }}>
+          <label className="btn btn-sm" style={{ cursor: 'pointer', margin: 0, padding: '0.35rem 0.75rem', fontSize: '0.7rem', display: 'inline-flex', background: 'var(--color-primary)', color: 'var(--admin-text)', border: 'none' }}>
             {uploading ? 'Memuat naik...' : '📁 Pilih Fail Gambar'}
             <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} disabled={uploading} />
           </label>
@@ -1408,7 +1536,7 @@ function BgImageRow({ label, sectionKey, currentUrl, onChange }: {
   });
 
   return (
-    <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', overflow: 'hidden' }}>
+    <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--admin-border)', borderRadius: '14px', overflow: 'hidden' }}>
       {/* Header row */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', padding: '0.85rem 1rem' }}>
         <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -1417,8 +1545,8 @@ function BgImageRow({ label, sectionKey, currentUrl, onChange }: {
             <img src={currentUrl} alt={label} style={{ width: 36, height: 36, borderRadius: '6px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }} />
           )}
           <div style={{ minWidth: 0 }}>
-            <p style={{ fontWeight: 600, fontSize: '0.85rem', color: '#f8fafc', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</p>
-            <p style={{ fontSize: '0.7rem', color: '#94a3b8', margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <p style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--admin-text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</p>
+            <p style={{ fontSize: '0.7rem', color: 'var(--admin-text-muted)', margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {currentUrl ? `✓ Latar ditetapkan` : 'Menggunakan Lalai Tema'}
             </p>
           </div>
@@ -1456,7 +1584,7 @@ function BgImageRow({ label, sectionKey, currentUrl, onChange }: {
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <input
                 className="form-control"
-                style={{ flex: 1, background: 'rgba(255,255,255,.07)', borderColor: 'rgba(255,255,255,.15)', color: '#f8fafc' }}
+                style={{ flex: 1, background: 'rgba(255,255,255,.07)', borderColor: 'rgba(255,255,255,.15)', color: 'var(--admin-text)' }}
                 placeholder="https://images.unsplash.com/..."
                 value={urlInput}
                 onChange={e => setUrlInput(e.target.value)}
@@ -1478,7 +1606,7 @@ function BgImageRow({ label, sectionKey, currentUrl, onChange }: {
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={p.url} alt={p.label} style={{ width: '100%', aspectRatio: '16/9', objectFit: 'cover', borderRadius: '8px', display: 'block' }} loading="lazy" />
-                  <span style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: '0.6rem', padding: '0.2rem 0.4rem', borderRadius: '0 0 8px 8px', textAlign: 'center' }}>{p.label}</span>
+                  <span style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(0,0,0,0.6)', color: 'var(--admin-text)', fontSize: '0.6rem', padding: '0.2rem 0.4rem', borderRadius: '0 0 8px 8px', textAlign: 'center' }}>{p.label}</span>
                 </button>
               ))}
             </div>

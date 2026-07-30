@@ -103,6 +103,7 @@ export interface WeddingConfig {
   };
   useUnifiedBackground?: boolean;
   unifiedBackgroundUrl?: string;
+  textOverrides?: Record<string, string>;
 }
 
 export interface Couple {
@@ -137,6 +138,7 @@ export interface Database {
   superAdmin: SuperAdmin;
   couples: Couple[];
   payments?: Payment[]; // new field for tracking accounting/payments
+  globalTextOverrides?: Record<string, string>;
 }
 
 /** Helper to check if a couple page is active based on superadmin statusMode & expiration */
@@ -164,8 +166,8 @@ const DEFAULT_CONFIG: WeddingConfig = {
     message: '',
     closing: '',
   },
-  useUnifiedBackground: false,
-  unifiedBackgroundUrl: '',
+  useUnifiedBackground: true,
+  unifiedBackgroundUrl: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&auto=format&fit=crop&q=80',
   sections: {
     gate: true,
     invitation: true,
@@ -197,8 +199,8 @@ const DEFAULT_CONFIG: WeddingConfig = {
   closingTitle: 'Terima Kasih',
   closingText: 'Kehadiran dan doa restu anda amat kami hargai. Semoga Allah memberkati majlis dan pertemuan kita.',
   showClosingPhoto: true,
-  closingPhotoUrl: '',
-  youtubeUrl: '',
+  closingPhotoUrl: 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=800&auto=format&fit=crop&q=80',
+  youtubeUrl: 'https://www.youtube.com/embed/cNGjD0VG4R8?autoplay=1&mute=0&loop=1&playlist=cNGjD0VG4R8',
   showMap: true,
   mapEmbedUrl: 'https://maps.google.com/maps?q=Kuala+Lumpur&output=embed',
   wazeLink: 'https://waze.com/ul?q=Kuala+Lumpur',
@@ -210,7 +212,7 @@ const DEFAULT_CONFIG: WeddingConfig = {
   bankName: 'Maybank',
   bankAccountName: 'Adam bin Abdullah',
   bankAccountNo: '1234 5678 9012',
-  bankQrUrl: '',
+  bankQrUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/QR_Code_Example.svg/250px-QR_Code_Example.svg.png',
   programme: [
     { time: '11:00 AM', event: 'Ketibaan Tetamu' },
     { time: '12:00 PM', event: 'Majlis Akad Nikah' },
@@ -219,17 +221,53 @@ const DEFAULT_CONFIG: WeddingConfig = {
     { time: '2:00 PM', event: 'Jamuan Makan Tengahari' },
     { time: '10:00 PM', event: 'Majlis Bersurai' },
   ],
-  photos: [],
+  photos: [
+    'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1529636798458-92182e662485?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1537633552985-df8429e8048b?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1606800052052-a08af7148866?w=800&auto=format&fit=crop&q=80',
+  ],
   wishes: [
-    { id: '1', name: 'Siti Aminah', message: 'Tahniah Adam & Hawa! Semoga bahagia hingga ke syurga. Amin.', createdAt: new Date().toISOString() },
+    { id: '1', name: 'Siti Aminah', message: 'Tahniah! Semoga bahagia hingga ke syurga. Amin.', createdAt: new Date().toISOString() },
     { id: '2', name: 'Fariz & Nurul', message: 'Selamat pengantin baru! Moga kekal bahagia dunia akhirat.', createdAt: new Date().toISOString() },
   ],
   gifts: [
-    { id: '1', item: 'Air Fryer', link: '' },
-    { id: '2', item: 'Set Pinggan Mangkuk Premium', link: '' },
-    { id: '3', item: 'Tilam King Size', link: '' },
+    {
+      id: '1',
+      item: 'Wireless Keyboard',
+      link: 'https://www.allithypermarket.com.my/products/logitech-pebble-keys-2-k380s-multi-device-bluetooth-wireless-keyboard-with-customizable-shortcuts-slim-and-portable?variant=44231460421860',
+      imageUrl: 'http://www.allithypermarket.com.my/cdn/shop/files/shopify_ce00833a-0bab-4cb2-b0e2-236b1a10b9a6.jpg?v=1756215715',
+      claimedBy: '',
+      price: 'RM 149.00'
+    },
+    {
+      id: '2',
+      item: 'Espresso Travel Mug',
+      link: 'https://www.nespresso.com/my/en/order/accessories/original/touch-travel-mug',
+      imageUrl: 'https://www.nespresso.com/ecom/medias/sys_master/public/9206582542366/A-3407-quickViewMediaFormat.png?',
+      claimedBy: '',
+      price: 'RM 109.00'
+    },
+    {
+      id: '3',
+      item: 'Set Pinggan Mangkuk Premium',
+      link: '',
+      imageUrl: 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=400&fit=crop',
+      claimedBy: '',
+      price: 'RM 250.00'
+    },
+    {
+      id: '4',
+      item: 'Air Fryer',
+      link: '',
+      imageUrl: 'https://images.unsplash.com/photo-1585515320310-259814833e62?w=400&fit=crop',
+      claimedBy: '',
+      price: 'RM 320.00'
+    }
   ],
   rsvps: [],
+  textOverrides: {},
 };
 
 function ensureDbFile(): Database {
@@ -240,6 +278,7 @@ function ensureDbFile(): Database {
       superAdmin: { passwordHash: '' },
       couples: [],
       payments: [],
+      globalTextOverrides: {},
     };
     // Seed default demo couple into initial database
     initial.couples.push({
@@ -258,9 +297,55 @@ function ensureDbFile(): Database {
     return initial;
   }
   const db = JSON.parse(fs.readFileSync(DB_PATH, 'utf-8')) as Database;
+  let modified = false;
   if (!db.payments) {
     db.payments = [];
+    modified = true;
   }
+  if (!db.globalTextOverrides) {
+    db.globalTextOverrides = {};
+    modified = true;
+  }
+  // Auto-upgrade existing couples to ensure all enhanced demo features (photos, youtube, background, QR, gifts) are applied
+  db.couples.forEach(c => {
+    if (c.config) {
+      if (!c.config.photos || c.config.photos.length === 0) {
+        c.config.photos = [...DEFAULT_CONFIG.photos];
+        modified = true;
+      }
+      if (!c.config.unifiedBackgroundUrl) {
+        c.config.useUnifiedBackground = true;
+        c.config.unifiedBackgroundUrl = DEFAULT_CONFIG.unifiedBackgroundUrl;
+        modified = true;
+      }
+      if (!c.config.closingPhotoUrl) {
+        c.config.closingPhotoUrl = DEFAULT_CONFIG.closingPhotoUrl;
+        modified = true;
+      }
+      if (!c.config.youtubeUrl) {
+        c.config.youtubeUrl = DEFAULT_CONFIG.youtubeUrl;
+        modified = true;
+      }
+      if (!c.config.bankQrUrl) {
+        c.config.bankQrUrl = DEFAULT_CONFIG.bankQrUrl;
+        modified = true;
+      }
+      if (c.config.gifts) {
+        c.config.gifts = c.config.gifts.map((g, idx) => {
+          const defaultRef = DEFAULT_CONFIG.gifts[idx % DEFAULT_CONFIG.gifts.length];
+          if (!g.price || !g.imageUrl) {
+            modified = true;
+          }
+          return {
+            ...g,
+            price: g.price || defaultRef.price || 'RM 150.00',
+            imageUrl: g.imageUrl || defaultRef.imageUrl || 'https://images.unsplash.com/photo-1513885535751-8b9238bd345a?w=400&fit=crop',
+          };
+        });
+      }
+    }
+  });
+
   // If demo couple is missing from parsed db, seed it
   if (!db.couples.find(c => c.loginId === 'demo')) {
     const demoConfig = getDefaultConfig();
@@ -278,6 +363,10 @@ function ensureDbFile(): Database {
       statusMode: 'on',
       mustChangePassword: false,
     });
+    modified = true;
+  }
+
+  if (modified) {
     fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2));
   }
   return db;

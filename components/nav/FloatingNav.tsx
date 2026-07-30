@@ -12,21 +12,21 @@ import { Gift } from '@/lib/db';
 
 type PopupKey = 'rsvp' | 'calendar' | 'contact' | 'location' | 'money' | 'gift' | null;
 
-import { INVITATION_DICT, Lang } from '@/lib/i18n';
+import { INVITATION_DICT, Lang, getInvitationText } from '@/lib/i18n';
 
-interface Props { config: WeddingConfig; coupleId: string; visible: boolean; onUpdateGifts?: (g: Gift[]) => void; lang?: Lang; }
+interface Props { config: WeddingConfig; coupleId: string; visible: boolean; onUpdateGifts?: (g: Gift[]) => void; lang?: Lang; textOverrides?: Record<string, string>; }
 
-export default function FloatingNav({ config, coupleId, visible, onUpdateGifts, lang }: Props) {
+export default function FloatingNav({ config, coupleId, visible, onUpdateGifts, lang, textOverrides }: Props) {
   const [active, setActive] = useState<PopupKey>(null);
   const currentLang: Lang = lang || config.language || 'ms';
-  const t = INVITATION_DICT[currentLang];
+  const t = getInvitationText(currentLang, textOverrides);
 
   const NAV_ITEMS = [
     { key: 'rsvp',     icon: <RsvpIcon />,     label: t.navRsvp },
     { key: 'calendar', icon: <CalIcon />,       label: t.navCalendar },
     { key: 'contact',  icon: <PhoneIcon />,     label: t.navContact },
     { key: 'location', icon: <PinIcon />,       label: t.navLocation },
-    { key: 'money',    icon: <MoneyIcon />,     label: t.navMoney },
+    { key: 'money',    icon: <MoneyIcon />,    label: t.navMoney },
     { key: 'gift',     icon: <GiftIcon />,      label: t.navGift },
   ] as const;
 
@@ -49,12 +49,12 @@ export default function FloatingNav({ config, coupleId, visible, onUpdateGifts, 
         ))}
       </nav>
 
-      {active === 'rsvp'     && <RsvpPopup     config={config} coupleId={coupleId} onClose={close} lang={currentLang} />}
-      {active === 'calendar' && <CalendarPopup config={config} onClose={close} lang={currentLang} />}
-      {active === 'contact'  && <ContactPopup  config={config} onClose={close} lang={currentLang} />}
-      {active === 'location' && <LocationPopup config={config} onClose={close} lang={currentLang} />}
-      {active === 'money'    && <MoneyPopup    config={config} onClose={close} lang={currentLang} />}
-      {active === 'gift'     && <GiftPopup     config={config} coupleId={coupleId} onClose={close} onUpdateGifts={onUpdateGifts} lang={currentLang} />}
+      {active === 'rsvp'     && <RsvpPopup     config={config} coupleId={coupleId} onClose={close} lang={currentLang} textOverrides={textOverrides} />}
+      {active === 'calendar' && <CalendarPopup config={config} onClose={close} lang={currentLang} textOverrides={textOverrides} />}
+      {active === 'contact'  && <ContactPopup  config={config} onClose={close} lang={currentLang} textOverrides={textOverrides} />}
+      {active === 'location' && <LocationPopup config={config} onClose={close} lang={currentLang} textOverrides={textOverrides} />}
+      {active === 'money'    && <MoneyPopup    config={config} onClose={close} lang={currentLang} textOverrides={textOverrides} />}
+      {active === 'gift'     && <GiftPopup     config={config} coupleId={coupleId} onClose={close} onUpdateGifts={onUpdateGifts} lang={currentLang} textOverrides={textOverrides} />}
     </>
   );
 }

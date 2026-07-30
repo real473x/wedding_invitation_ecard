@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './dashboard.module.css';
 
-import { ADMIN_DICT, Lang, formatPackageName } from '@/lib/i18n';
+import { ADMIN_DICT, Lang, formatPackageName, getAdminText, ADMIN_TEXT_KEYS } from '@/lib/i18n';
 
 interface CoupleRow {
   id: string;
@@ -45,7 +45,7 @@ export default function SuperAdminDashboard() {
   const [payments, setPayments] = useState<PaymentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [paymentLoading, setPaymentLoading] = useState(true);
-  const [subTab, setSubTab] = useState<'couples' | 'accounting'>('couples');
+  const [subTab, setSubTab] = useState<'couples' | 'accounting' | 'text'>('couples');
   
   const [showAddModal, setShowAddModal] = useState(false);
   const [showAddPaymentModal, setShowAddPaymentModal] = useState(false);
@@ -56,6 +56,10 @@ export default function SuperAdminDashboard() {
   const [toast, setToast] = useState('');
   const [theme, setTheme] = useState('dark');
   const [lang, setLang] = useState<Lang>('ms');
+  
+  const [globalTextOverrides, setGlobalTextOverrides] = useState<Record<string, string>>({});
+  const [hasUnsavedGlobalText, setHasUnsavedGlobalText] = useState(false);
+  const [savingGlobalText, setSavingGlobalText] = useState(false);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('admin-theme') || 'dark';
@@ -78,7 +82,48 @@ export default function SuperAdminDashboard() {
     localStorage.setItem('admin-lang', next);
   };
 
-  const t = ADMIN_DICT[lang];
+  const t = getAdminText(lang, globalTextOverrides);
+
+  const fetchGlobalText = useCallback(async () => {
+    try {
+      const res = await fetch('/api/config/global');
+      if (res.ok) {
+        const data = await res.json();
+        setGlobalTextOverrides(data.globalTextOverrides || {});
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchGlobalText();
+  }, [fetchGlobalText]);
+
+  const saveGlobalText = async () => {
+    setSavingGlobalText(true);
+    try {
+      const res = await fetch('/api/super-admin/config/global', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ globalTextOverrides }),
+      });
+      if (res.ok) {
+        setHasUnsavedGlobalText(false);
+        showToast('Global Text Overrides Saved!');
+      } else {
+        showToast('Failed to save overrides');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Error saving overrides');
+    } finally {
+      setSavingGlobalText(false);
+    }
+  };
+
+  const [deletePaymentConfirm, setDeletePaymentConfirm] = useState<string | null>(null);
+  const [editPayment, setEditPayment] = useState<PaymentRow | null>(null);
 
   const fetchCouples = useCallback(async () => {
     const res = await fetch('/api/super-admin/couples');
@@ -89,23 +134,21 @@ export default function SuperAdminDashboard() {
   }, [router]);
 
   const fetchPayments = useCallback(async () => {
-    setPaymentLoading(true);
     const res = await fetch('/api/super-admin/payments');
-    if (res.status === 401) { router.push('/super-admin/login'); return; }
     const data = await res.json();
     setPayments(data.payments || []);
     setPaymentLoading(false);
-  }, [router]);
+  }, []);
 
   useEffect(() => {
     fetchCouples();
   }, [fetchCouples]);
 
   useEffect(() => {
-    if (subTab === 'accounting') {
+    if (subTab === 'accounting' && payments.length === 0) {
       fetchPayments();
     }
-  }, [subTab, fetchPayments]);
+  }, [subTab, fetchPayments, payments.length]);
 
   function showToast(msg: string) {
     setToast(msg);
@@ -127,6 +170,17 @@ export default function SuperAdminDashboard() {
     setCouples(prev => prev.filter(c => c.id !== id));
     setDeleteConfirm(null);
     showToast('🗑️ Data pasangan telah dipadam');
+  }
+
+  async function handleDeletePayment(id: string) {
+    const res = await fetch(`/api/super-admin/payments/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      setPayments(prev => prev.filter(p => p.id !== id));
+      setDeletePaymentConfirm(null);
+      showToast('🗑️ Rekod bayaran telah dipadam');
+    } else {
+      showToast('❌ Ralat memadam rekod bayaran');
+    }
   }
 
   async function handleEditCouple(id: string) {
@@ -216,13 +270,17 @@ export default function SuperAdminDashboard() {
           </div>
         </div>
         <div className={styles.headerRight}>
-          <button 
-            onClick={toggleLang} 
-            className={`btn btn-sm ${styles.accountBtn}`}
-            title="Tukar Bahasa / Change Language"
-          >
-            🌐 {lang.toUpperCase()}
-          </button>
+          {hasUnsavedGlobalText && (
+            <button
+              onClick={saveGlobalText}
+              className={`btn btn-sm`}
+              style={{ background: 'var(--admin-accent)', color: 'var(--admin-text)' }}
+              disabled={savingGlobalText}
+            >
+              {savingGlobalText ? t.saving : t.saveChanges}
+            </button>
+          )}
+
           <button 
             onClick={toggleTheme} 
             className={`btn btn-sm ${styles.accountBtn}`}
@@ -248,9 +306,12 @@ export default function SuperAdminDashboard() {
           <button className={`${styles.subTabBtn} ${subTab === 'accounting' ? styles.subTabActive : ''}`} onClick={() => { setSubTab('accounting'); setSearch(''); }}>
             {t.accountingTab} (RM {totalRevenue.toFixed(2)})
           </button>
+          <button className={`${styles.subTabBtn} ${subTab === 'text' ? styles.subTabActive : ''}`} onClick={() => { setSubTab('text'); }}>
+            {lang === 'en' ? '✏️ Global Text (Admin/Login)' : '✏️ Teks Global (Admin/Log Masuk)'}
+          </button>
         </div>
 
-        {subTab === 'couples' ? (
+        {subTab === 'couples' && (
           <>
             {/* Stats */}
             <div className={styles.statsRow}>
@@ -378,7 +439,9 @@ export default function SuperAdminDashboard() {
               </div>
             )}
           </>
-        ) : (
+        )}
+
+        {subTab === 'accounting' && (
           <>
             {/* Accounting dashboard */}
             <div className={styles.statsRow}>
@@ -436,6 +499,7 @@ export default function SuperAdminDashboard() {
                       <th>Pakej</th>
                       <th>Jumlah Bayaran</th>
                       <th>Catatan / Nota</th>
+                      <th>Tindakan</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -446,6 +510,16 @@ export default function SuperAdminDashboard() {
                         <td><span className={styles.themeBadge}>{formatPackageName(p.packageName, lang)}</span></td>
                         <td style={{ color: '#4ade80', fontWeight: 'bold' }}>RM {p.amount.toFixed(2)}</td>
                         <td><div className={styles.tableNote} title={p.notes}>{p.notes || '—'}</div></td>
+                        <td>
+                          <div className={styles.actions}>
+                            <button className={`btn btn-sm ${styles.editBtn}`} onClick={() => setEditPayment(p)} title="Kemaskini">
+                              ✏️ Kemaskini
+                            </button>
+                            <button className={`btn btn-sm ${styles.deleteBtn}`} onClick={() => setDeletePaymentConfirm(p.id)} title="Padam">
+                              🗑️ Padam
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -453,6 +527,96 @@ export default function SuperAdminDashboard() {
               </div>
             )}
           </>
+        )}
+
+        {subTab === 'text' && (
+          <div className={styles.configSection}>
+            <div className={styles.sectionHeader}>
+              <h3>{t.textOverridesSection}</h3>
+              <p>{t.textOverridesDesc}</p>
+            </div>
+            
+            <div className={styles.textGroups}>
+              {ADMIN_TEXT_KEYS.map((groupObj, i) => (
+                <div key={i} className={styles.textGroup}>
+                  <h4 className={styles.textGroupTitle}>
+                    {t[groupObj.group as keyof typeof t] || groupObj.group}
+                  </h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.25rem', padding: '0.5rem 0' }}>
+                    {groupObj.keys.map(key => {
+                      const defaultVal = ADMIN_DICT[lang][key as keyof typeof ADMIN_DICT['ms']] || key;
+                      const isOverridden = globalTextOverrides.hasOwnProperty(key);
+                      const currentVal = globalTextOverrides[key] || '';
+                      
+                      return (
+                        <div key={key} style={{ background: 'rgba(0,0,0,0.15)', padding: '1rem', borderRadius: '12px', border: '1px solid var(--admin-border)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                            <label style={{ margin: 0, fontSize: '0.8rem', color: 'var(--admin-text-muted)', fontWeight: 600 }}>{defaultVal}</label>
+                            <label className="toggle-switch" style={{ transform: 'scale(0.7)', margin: 0 }}>
+                              <input type="checkbox" checked={isOverridden} onChange={e => {
+                                setHasUnsavedGlobalText(true);
+                                if (e.target.checked) {
+                                  setGlobalTextOverrides(prev => ({ ...prev, [key]: defaultVal }));
+                                } else {
+                                  setGlobalTextOverrides(prev => {
+                                    const next = { ...prev };
+                                    delete next[key];
+                                    return next;
+                                  });
+                                }
+                              }} />
+                              <span className="toggle-slider" />
+                            </label>
+                          </div>
+                          
+                          {isOverridden ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                              <textarea
+                                value={currentVal}
+                                placeholder={defaultVal}
+                                onChange={e => {
+                                  setGlobalTextOverrides(prev => ({ ...prev, [key]: e.target.value }));
+                                  setHasUnsavedGlobalText(true);
+                                }}
+                                style={{ 
+                                  width: '100%', 
+                                  minHeight: '42px',
+                                  padding: '0.65rem',
+                                  background: 'var(--admin-input-bg)',
+                                  border: currentVal ? '1px solid rgba(201,168,76,0.4)' : '1px solid var(--admin-border)',
+                                  color: 'var(--admin-text)',
+                                  borderRadius: '8px',
+                                  fontSize: '0.85rem',
+                                  resize: 'vertical',
+                                  fontFamily: 'inherit',
+                                  lineHeight: '1.4'
+                                }}
+                              />
+                              <button 
+                                className="btn btn-sm"
+                                style={{ alignSelf: 'flex-end', padding: '0.35rem 0.65rem', fontSize: '0.7rem', background: 'var(--admin-input-bg)', color: 'var(--admin-text-muted)', border: 'none' }}
+                                onClick={() => {
+                                  setGlobalTextOverrides(prev => ({ ...prev, [key]: defaultVal }));
+                                  setHasUnsavedGlobalText(true);
+                                }}
+                                title="Kembali ke teks lalai"
+                              >
+                                ↺ Default
+                              </button>
+                            </div>
+                          ) : (
+                            <div style={{ padding: '0.65rem 0.85rem', background: 'var(--admin-stat-bg)', borderRadius: '8px', color: 'var(--admin-text-muted)', fontSize: '0.85rem', border: '1px dashed var(--admin-border)' }}>
+                              {defaultVal} <span style={{ fontSize: '0.7rem', fontStyle: 'italic', marginLeft: '0.5rem', color: '#64748b' }}>(Auto)</span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
       </div>
 
@@ -533,6 +697,33 @@ export default function SuperAdminDashboard() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Delete Payment Confirm Modal */}
+      {deletePaymentConfirm && (
+        <div className="popup-overlay" onClick={() => setDeletePaymentConfirm(null)}>
+          <div className={styles.confirmModal} onClick={e => e.stopPropagation()}>
+            <h3>⚠️ Padam Rekod Bayaran?</h3>
+            <p>Tindakan ini akan memadam rekod bayaran ini. Tindakan ini tidak boleh dibuat asal.</p>
+            <div className={styles.confirmBtns}>
+              <button className="btn btn-outline" onClick={() => setDeletePaymentConfirm(null)}>Batal</button>
+              <button className="btn btn-danger" onClick={() => handleDeletePayment(deletePaymentConfirm)}>Ya, Padam</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Payment Modal */}
+      {editPayment && (
+        <EditPaymentModal
+          payment={editPayment}
+          onClose={() => setEditPayment(null)}
+          onUpdated={() => {
+            setEditPayment(null);
+            fetchPayments();
+            showToast('✅ Rekod bayaran berjaya dikemaskini!');
+          }}
+        />
       )}
 
       {/* Add Payment Modal */}
@@ -771,6 +962,79 @@ function AddPaymentModal({ couples, onClose, onCreated }: {
             <button type="button" className="btn btn-outline" onClick={onClose}>Batal</button>
             <button type="submit" className="btn btn-primary" disabled={loading}>
               {loading ? 'Merekod...' : '✓ Rekod Bayaran'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function EditPaymentModal({
+  payment,
+  onClose,
+  onUpdated,
+}: {
+  payment: PaymentRow;
+  onClose: () => void;
+  onUpdated: () => void;
+}) {
+  const [form, setForm] = useState({
+    amount: payment.amount.toString(),
+    packageName: payment.packageName,
+    notes: payment.notes,
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/super-admin/payments/${payment.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error); return; }
+      onUpdated();
+    } catch { setError('Ralat. Cuba semula.'); }
+    finally { setLoading(false); }
+  }
+
+  return (
+    <div className="popup-overlay" onClick={onClose}>
+      <div className={styles.addModal} style={{ maxWidth: '460px' }} onClick={e => e.stopPropagation()}>
+        <div className={styles.addModalHeader}>
+          <h3>✏️ Kemaskini Rekod Bayaran</h3>
+          <button className="popup-close" onClick={onClose}>✕</button>
+        </div>
+        <form onSubmit={handleSubmit} className={styles.addForm}>
+          <div className="form-group">
+            <label>Pasangan Pengantin (Tidak Boleh Diubah)</label>
+            <input className="form-control" type="text" value={payment.coupleName} disabled style={{ opacity: 0.7 }} />
+          </div>
+          <div className={styles.formRow}>
+            <div className="form-group">
+              <label>Jumlah Bayaran (RM) *</label>
+              <input className="form-control" type="number" step="0.01" min="0.01" placeholder="0.00" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} required />
+            </div>
+            <div className="form-group">
+              <label>Perihalan Pakej / Nama</label>
+              <input className="form-control" placeholder="cth: Pembaharuan 30 Hari" value={form.packageName} onChange={e => setForm(f => ({ ...f, packageName: e.target.value }))} required />
+            </div>
+          </div>
+          <div className="form-group">
+            <label>Catatan (Pilihan)</label>
+            <textarea className="form-control" rows={3} placeholder="Catatan bayaran..." value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
+          </div>
+          {error && <div style={{ color: '#e87c6f', fontSize: '0.85rem', background: 'rgba(192,57,43,.1)', padding: '0.6rem', borderRadius: '8px' }}>{error}</div>}
+          <div className={styles.addModalFooter}>
+            <button type="button" className="btn btn-outline" onClick={onClose}>Batal</button>
+            <button type="submit" className="btn btn-primary" disabled={loading}>
+              {loading ? 'Menyimpan...' : '✓ Kemaskini'}
             </button>
           </div>
         </form>

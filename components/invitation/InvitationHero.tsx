@@ -2,11 +2,11 @@
 import { WeddingConfig } from '@/lib/db';
 import styles from './InvitationHero.module.css';
 
-import { INVITATION_DICT, Lang } from '@/lib/i18n';
+import { INVITATION_DICT, Lang, getInvitationText } from '@/lib/i18n';
 
-export default function InvitationHero({ config, style, lang }: { config: WeddingConfig; style?: React.CSSProperties; lang?: Lang }) {
+export default function InvitationHero({ config, style, lang, textOverrides }: { config: WeddingConfig; style?: React.CSSProperties; lang?: Lang; textOverrides?: Record<string, string> }) {
   const currentLang: Lang = lang || config.language || 'ms';
-  const t = INVITATION_DICT[currentLang];
+  const t = getInvitationText(currentLang, textOverrides);
   const dateObj = config.weddingDate ? new Date(config.weddingDate + 'T00:00:00') : null;
   const formattedDate = dateObj ? dateObj.toLocaleDateString(currentLang === 'en' ? 'en-US' : 'ms-MY', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '';
 
@@ -31,14 +31,18 @@ export default function InvitationHero({ config, style, lang }: { config: Weddin
           <div className={`${styles.dateWrap} fade-in-up delay-2`}>
             <div className={styles.dateLine} />
             <div className={styles.dateContent}>
-              <span className={styles.dateLabel}>{currentLang === 'en' ? 'Date' : 'Tarikh'}</span>
-              <span className={styles.dateText}>{formattedDate}</span>
+              <span className={styles.dateLabel}>{t.heroDateLabel}</span>
+              <span className={styles.dateText}>
+                {textOverrides?.hasOwnProperty('heroDate') 
+                  ? (textOverrides.heroDate || '') 
+                  : formattedDate}
+              </span>
             </div>
             <div className={styles.dateLine} />
           </div>
 
           <div className={`${styles.venueWrap} fade-in-up delay-3`}>
-            <span className={styles.venueLabel}>{currentLang === 'en' ? 'Venue' : 'Tempat Majlis'}</span>
+            <span className={styles.venueLabel}>{t.heroVenueLabel}</span>
             <span className={styles.venueName}>{config.venue}</span>
             <span className={styles.venueAddr}>{config.venueAddress}</span>
           </div>

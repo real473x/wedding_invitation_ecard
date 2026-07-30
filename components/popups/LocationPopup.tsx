@@ -2,13 +2,13 @@
 import { useState } from 'react';
 import { WeddingConfig } from '@/lib/db';
 
-import { INVITATION_DICT, Lang } from '@/lib/i18n';
+import { INVITATION_DICT, Lang, getInvitationText } from '@/lib/i18n';
 
-interface Props { config: WeddingConfig; onClose: () => void; lang?: Lang; }
+interface Props { config: WeddingConfig; onClose: () => void; lang?: Lang; textOverrides?: Record<string, string>; }
 
-export default function LocationPopup({ config, onClose, lang }: Props) {
+export default function LocationPopup({ config, onClose, lang, textOverrides }: Props) {
   const currentLang: Lang = lang || config.language || 'ms';
-  const t = INVITATION_DICT[currentLang];
+  const t = getInvitationText(currentLang, textOverrides);
   const [closing, setClosing] = useState(false);
 
   function handleClose() {

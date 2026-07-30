@@ -282,37 +282,37 @@ export default function InvitationPage({ params }: { params: Promise<{ coupleId:
       <>
         {sections.invitation && (
           <div id="invitation" className="section-scroll-target" style={{ scrollSnapAlign: 'start' }}>
-            <InvitationHero config={config} style={getSectionStyle('invitation')} lang={siteLang} />
+            <InvitationHero config={config} style={getSectionStyle('invitation')} lang={siteLang} textOverrides={config.textOverrides} />
           </div>
         )}
         {sections.parents && (
           <div id="parents" className="section-scroll-target" style={{ scrollSnapAlign: 'start' }}>
-            <ParentsSection config={config} style={getSectionStyle('parents')} lang={siteLang} />
+            <ParentsSection config={config} style={getSectionStyle('parents')} lang={siteLang} textOverrides={config.textOverrides} />
           </div>
         )}
         {sections.countdown && (
           <div id="countdown" className="section-scroll-target" style={{ scrollSnapAlign: 'start' }}>
-            <CountdownSection config={config} style={getSectionStyle('countdown')} lang={siteLang} />
+            <CountdownSection config={config} style={getSectionStyle('countdown')} lang={siteLang} textOverrides={config.textOverrides} />
           </div>
         )}
         {sections.programme && (
           <div id="programme" className="section-scroll-target" style={{ scrollSnapAlign: 'start' }}>
-            <ProgrammeSection config={config} style={getSectionStyle('programme')} lang={siteLang} />
+            <ProgrammeSection config={config} style={getSectionStyle('programme')} lang={siteLang} textOverrides={config.textOverrides} />
           </div>
         )}
         {sections.gallery && (
           <div id="gallery" className="section-scroll-target" style={{ scrollSnapAlign: 'start' }}>
-            <GalleryWishes config={config} coupleId={dbId} style={getSectionStyle('gallery')} lang={siteLang} />
+            <GalleryWishes config={config} coupleId={dbId} style={getSectionStyle('gallery')} lang={siteLang} textOverrides={config.textOverrides} />
           </div>
         )}
         {sections.message && (
           <div id="message" className="section-scroll-target" style={{ scrollSnapAlign: 'start' }}>
-            <CoupleMessage config={config} style={getSectionStyle('message')} />
+            <CoupleMessage config={config} style={getSectionStyle('message')} lang={siteLang} textOverrides={config.textOverrides} />
           </div>
         )}
         {sections.closing && (
           <div id="closing" className="section-scroll-target" style={{ scrollSnapAlign: 'start' }}>
-            <ClosingScreen config={config} style={getSectionStyle('closing')} />
+            <ClosingScreen config={config} style={getSectionStyle('closing')} lang={siteLang} textOverrides={config.textOverrides} />
           </div>
         )}
 
@@ -337,33 +337,9 @@ export default function InvitationPage({ params }: { params: Promise<{ coupleId:
 
       {/* Overlay the Gate Screen on top of everything if enabled and not yet unmounted */}
       {sections.gate && !gateUnmounted && (
-        <GateScreen config={config} onOpen={handleGateOpen} isOpen={gateOpen} isClosing={gateClosing} lang={siteLang} />
+        <GateScreen config={config} onOpen={handleGateOpen} isOpen={gateOpen} isClosing={gateClosing} lang={siteLang} textOverrides={config.textOverrides} />
       )}
 
-      {/* Guest language switcher button on live page */}
-      <button
-        onClick={() => setSiteLang(l => l === 'ms' ? 'en' : 'ms')}
-        style={{
-          position: 'fixed',
-          top: '1rem',
-          right: '1rem',
-          zIndex: 9999,
-          background: 'rgba(0,0,0,0.45)',
-          backdropFilter: 'blur(8px)',
-          border: '1px solid rgba(255,255,255,0.25)',
-          color: '#fff',
-          borderRadius: '50px',
-          padding: '0.35rem 0.75rem',
-          fontSize: '0.75rem',
-          fontWeight: 700,
-          cursor: 'pointer',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-          transition: 'all 0.2s ease',
-        }}
-        title="Switch Live Site Language (BM / EN)"
-      >
-        🌐 {siteLang.toUpperCase()}
-      </button>
 
       <FloatingNav
         config={config}
@@ -373,6 +349,7 @@ export default function InvitationPage({ params }: { params: Promise<{ coupleId:
           setConfig(prev => prev ? { ...prev, gifts: updatedGifts } : null);
         }}
         lang={siteLang}
+        textOverrides={config.textOverrides}
       />
     </div>
   );

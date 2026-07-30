@@ -75,9 +75,14 @@ export async function POST(req: NextRequest) {
   const defaultConfig = getDefaultConfig();
   defaultConfig.groomName = groomName;
   defaultConfig.brideName = brideName;
-  defaultConfig.groomFullName = `${groomName} bin Abdullah`;
-  defaultConfig.brideFullName = `${brideName} binti Ibrahim`;
+  defaultConfig.groomFullName = groomName;
+  defaultConfig.brideFullName = brideName;
   defaultConfig.theme = theme || 'malay';
+  defaultConfig.bankAccountName = `${groomName} / ${brideName}`;
+  defaultConfig.contacts = [
+    { name: `${groomName} (Pengantin Lelaki)`, phone: '0123456789' },
+    { name: `${brideName} (Pengantin Perempuan)`, phone: '0198765432' },
+  ];
 
   if (weddingDate) {
     defaultConfig.weddingDate = weddingDate;

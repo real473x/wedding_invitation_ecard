@@ -35,6 +35,7 @@ export const ADMIN_DICT = {
     tabTema: '🎨 Tema',
     tabLatar: '🖼️ Latar',
     tabSkrin: '📱 Skrin',
+    tabTeks: '✏️ Teks',
     tabMaklumat: '💍 Maklumat',
     tabMedia: '📸 Media',
     tabAturcara: '📋 Aturcara',
@@ -44,6 +45,25 @@ export const ADMIN_DICT = {
     tabHadiah: '🎁 Hadiah',
     tabRsvp: '📨 RSVP',
     tabAkaun: '⚙️ Akaun',
+
+    // Text Overrides Section
+    textOverridesSection: '✏️ Sunting Teks Laman Web',
+    textOverridesDesc: 'Tulis teks kustom untuk menggantikan teks lalai di laman jemputan anda. Kosongkan untuk guna teks asal.',
+    textGroupGate: '🚪 Skrin Pembukaan',
+    textGroupHero: '💌 Kad Jemputan',
+    textGroupParents: '👨‍👩‍👦 Bahagian Keluarga',
+    textGroupCountdown: '⏱️ Kiraan Mundur',
+    textGroupProgramme: '📋 Aturcara',
+    textGroupGallery: '📸 Galeri & Ucapan',
+    textGroupMessage: '💝 Mesej Pasangan',
+    textGroupClosing: '🙏 Penutup',
+    textGroupNav: '🧭 Navigasi & Popup',
+    textGroupRsvp: '📨 Popup RSVP',
+    textGroupCalendar: '📅 Popup Kalendar',
+    textGroupContact: '📞 Popup Hubungi',
+    textGroupLocation: '📍 Popup Lokasi',
+    textGroupMoney: '💰 Popup Sumbangan',
+    textGroupGift: '🎁 Popup Hadiah',
 
     // Section Titles in Admin
     themeSection: '🎨 Pilih Tema',
@@ -126,6 +146,7 @@ export const ADMIN_DICT = {
     tabTema: '🎨 Theme',
     tabLatar: '🖼️ Background',
     tabSkrin: '📱 Sections',
+    tabTeks: '✏️ Text',
     tabMaklumat: '💍 Details',
     tabMedia: '📸 Media',
     tabAturcara: '📋 Timeline',
@@ -135,6 +156,25 @@ export const ADMIN_DICT = {
     tabHadiah: '🎁 Gift Registry',
     tabRsvp: '📨 RSVP List',
     tabAkaun: '⚙️ Account',
+
+    // Text Overrides Section
+    textOverridesSection: '✏️ Edit Website Text',
+    textOverridesDesc: 'Write custom text to override default labels on your invitation site. Leave blank to use the default.',
+    textGroupGate: '🚪 Gate Screen',
+    textGroupHero: '💌 Invitation Card',
+    textGroupParents: '👨‍👩‍👦 Parents Section',
+    textGroupCountdown: '⏱️ Countdown',
+    textGroupProgramme: '📋 Programme',
+    textGroupGallery: '📸 Gallery & Wishes',
+    textGroupMessage: '💝 Couple Message',
+    textGroupClosing: '🙏 Closing',
+    textGroupNav: '🧭 Navigation & Popups',
+    textGroupRsvp: '📨 RSVP Popup',
+    textGroupCalendar: '📅 Calendar Popup',
+    textGroupContact: '📞 Contact Popup',
+    textGroupLocation: '📍 Location Popup',
+    textGroupMoney: '💰 Cash Gift Popup',
+    textGroupGift: '🎁 Gift Registry Popup',
 
     // Section Titles in Admin
     themeSection: '🎨 Choose Theme',
@@ -211,11 +251,18 @@ export const INVITATION_DICT = {
     // Hero
     celebratingLove: 'Meraikan Cinta',
     saveTheDate: 'Simpan Tarikh Ini',
+    heroDateLabel: 'Tarikh',
+    heroVenueLabel: 'Tempat Majlis',
 
     // Parents
     cordialInvitation: 'Undangan Mesra',
     parentsInviting: 'Dengan Penuh Kesyukuran Kami',
     inviteSentence: 'Menjemput Dato\' / Datin / Tuan / Puan / Encik / Cik ke majlis perkahwinan anakanda kami',
+    parentsRoleGroom: 'Keluarga Pengantin Lelaki',
+    parentsRoleBride: 'Keluarga Pengantin Perempuan',
+    parentsInviteLine1: 'Menjemput',
+    parentsInviteLine2: 'Dato\' / Datin / Tuan / Puan / Encik / Cik',
+    parentsInviteLine3: 'ke Majlis Perkahwinan Anak Kami',
 
     // Countdown
     countdownTitle: 'Kiraan Mundur Majlis',
@@ -224,6 +271,7 @@ export const INVITATION_DICT = {
     minutes: 'Minit',
     seconds: 'Saat',
     addToCalendar: '📅 Tambah ke Kalendar',
+    countdownEventPassed: 'Majlis telah berlangsung!',
 
     // Programme
     eventSchedule: 'Aturcara Majlis',
@@ -236,6 +284,10 @@ export const INVITATION_DICT = {
     yourWish: 'Tuliskan ucapan & doa restu...',
     submitWish: 'Hantar Ucapan',
     sending: 'Menghantar...',
+    galleryNoWishes: 'Tiada ucapan lagi. Jadilah yang pertama! 💌',
+    galleryWishThanks: 'Terima kasih atas ucapan anda!',
+    galleryWishNamePlaceholder: 'Nama...',
+    galleryWishLabel: 'Ucapan / Doa',
 
     // Couple Message
     fromUs: 'Dari Kami Berdua',
@@ -298,11 +350,18 @@ export const INVITATION_DICT = {
     // Hero
     celebratingLove: 'Celebrating Love',
     saveTheDate: 'Save The Date',
+    heroDateLabel: 'Date',
+    heroVenueLabel: 'Venue',
 
     // Parents
     cordialInvitation: 'Cordial Invitation',
     parentsInviting: 'With Joy and Gratitude, We',
     inviteSentence: 'Warmly invite you to celebrate the wedding of our beloved children',
+    parentsRoleGroom: 'Groom\'s Family',
+    parentsRoleBride: 'Bride\'s Family',
+    parentsInviteLine1: 'Warmly invite you',
+    parentsInviteLine2: 'Our Valued Guests',
+    parentsInviteLine3: 'to celebrate the wedding of our children',
 
     // Countdown
     countdownTitle: 'Event Countdown',
@@ -311,6 +370,7 @@ export const INVITATION_DICT = {
     minutes: 'Minutes',
     seconds: 'Seconds',
     addToCalendar: '📅 Add to Calendar',
+    countdownEventPassed: 'The event has taken place!',
 
     // Programme
     eventSchedule: 'Event Schedule',
@@ -323,6 +383,10 @@ export const INVITATION_DICT = {
     yourWish: 'Write your blessings & warm wishes...',
     submitWish: 'Send Wish',
     sending: 'Sending...',
+    galleryNoWishes: 'No wishes yet. Be the first! 💌',
+    galleryWishThanks: 'Thank you for your warm wish!',
+    galleryWishNamePlaceholder: 'Your name...',
+    galleryWishLabel: 'Wish / Blessing',
 
     // Couple Message
     fromUs: 'From Both of Us',
@@ -377,3 +441,109 @@ export const INVITATION_DICT = {
     submitGift: 'Submit Gift',
   }
 } as const;
+
+// Helper: get invitation text with overrides
+export function getInvitationText(lang: Lang, overrides?: Record<string, string>) {
+  const base = INVITATION_DICT[lang];
+  if (!overrides || Object.keys(overrides).length === 0) return base;
+  return { ...base, ...overrides } as typeof base;
+}
+
+// All overridable invitation text keys grouped for the admin editor
+export const INVITATION_TEXT_KEYS = [
+  {
+    group: 'textGroupGate',
+    keys: ['openInvitation', 'walimatulurus', 'dearGuest'],
+  },
+  {
+    group: 'textGroupHero',
+    keys: ['celebratingLove', 'saveTheDate', 'heroDateLabel', 'heroVenueLabel'],
+  },
+  {
+    group: 'textGroupParents',
+    keys: ['cordialInvitation', 'parentsInviting', 'inviteSentence', 'parentsRoleGroom', 'parentsRoleBride', 'parentsInviteLine1', 'parentsInviteLine2', 'parentsInviteLine3'],
+  },
+  {
+    group: 'textGroupCountdown',
+    keys: ['countdownTitle', 'days', 'hours', 'minutes', 'seconds', 'addToCalendar', 'countdownEventPassed'],
+  },
+  {
+    group: 'textGroupProgramme',
+    keys: ['eventSchedule'],
+  },
+  {
+    group: 'textGroupGallery',
+    keys: ['galleryTitle', 'wishesTitle', 'sendWish', 'yourName', 'yourWish', 'submitWish', 'sending', 'galleryNoWishes', 'galleryWishThanks', 'galleryWishNamePlaceholder', 'galleryWishLabel'],
+  },
+  {
+    group: 'textGroupMessage',
+    keys: ['fromUs'],
+  },
+  {
+    group: 'textGroupClosing',
+    keys: ['thankYou'],
+  },
+  {
+    group: 'textGroupNav',
+    keys: ['navRsvp', 'navCalendar', 'navContact', 'navLocation', 'navMoney', 'navGift'],
+  },
+  {
+    group: 'textGroupRsvp',
+    keys: ['rsvpHeader', 'rsvpAttendance', 'attendingYes', 'attendingNo', 'paxCount', 'submitRsvp'],
+  },
+  {
+    group: 'textGroupCalendar',
+    keys: ['calendarHeader', 'googleCalendar', 'appleCalendar'],
+  },
+  {
+    group: 'textGroupContact',
+    keys: ['contactHeader', 'call', 'whatsapp'],
+  },
+  {
+    group: 'textGroupLocation',
+    keys: ['locationHeader', 'openWaze', 'openGoogleMaps'],
+  },
+  {
+    group: 'textGroupMoney',
+    keys: ['moneyHeader', 'bankAccount', 'accountNo', 'copyAccountNo', 'copied'],
+  },
+  {
+    group: 'textGroupGift',
+    keys: ['giftHeader', 'suggestGift', 'buyLink', 'claimedBy', 'giftName', 'shopLink', 'fetchImage', 'fetchPrice', 'priceLabel', 'uploadImage', 'submitGift'],
+  },
+];
+
+// Helper: get admin text with global overrides
+export function getAdminText(lang: Lang, overrides?: Record<string, string>) {
+  const base = ADMIN_DICT[lang];
+  if (!overrides || Object.keys(overrides).length === 0) return base;
+  return { ...base, ...overrides } as typeof base;
+}
+
+// All overridable admin text keys grouped for the super admin editor
+export const ADMIN_TEXT_KEYS = [
+  {
+    group: 'Tabs',
+    keys: ['tabTema', 'tabLatar', 'tabSkrin', 'tabTeks', 'tabMaklumat', 'tabMedia', 'tabAturcara', 'tabKenalan', 'tabLokasi', 'tabKewangan', 'tabHadiah', 'tabRsvp', 'tabAkaun']
+  },
+  {
+    group: 'Header & Auth',
+    keys: ['weddingTitle', 'superAdminTitle', 'manageAccount', 'logout', 'lightMode', 'darkMode', 'saveChanges', 'saving', 'unsavedChanges', 'websiteLang', 'liveSite', 'loginHeader', 'password', 'loginBtn', 'loggingIn']
+  },
+  {
+    group: 'Super Admin Dashboard',
+    keys: ['couplesTab', 'accountingTab', 'totalCouples', 'activeCouples', 'expiredOffCouples', 'totalRsvp', 'totalRevenue', 'addCouple', 'addPayment', 'searchPlaceholder', 'accessEditor', 'resetPassword', 'delete', 'confirmDelete', 'coupleHeader', 'loginIdHeader', 'packageHeader', 'expiryHeader', 'statusModeHeader', 'actionsHeader', 'statusActive', 'statusWarn', 'statusExpired', 'daysLeft', 'noCouplesFound', 'addFirstCouple']
+  },
+  {
+    group: 'Common Labels',
+    keys: ['groom', 'bride', 'shortName', 'fullName', 'fatherName', 'motherName', 'weddingDate', 'weddingDay', 'weddingTime', 'receptionTime', 'venue', 'venueAddress', 'quote', 'quoteSource', 'coupleMessageTitle', 'coupleMessage', 'closingTitle', 'closingText', 'showClosingPhoto', 'youtubeUrl', 'mapEmbedUrl', 'wazeLink', 'googleMapsLink', 'bankName', 'bankAccountName', 'bankAccountNo', 'bankQrUrl']
+  },
+  {
+    group: 'Section Titles',
+    keys: ['themeSection', 'backgroundSection', 'sectionVisibility', 'sectionVisibilityDesc', 'weddingDetails', 'mediaSection', 'programmeSection', 'contactSection', 'locationSection', 'moneySection', 'giftSection', 'rsvpSection', 'accountSection']
+  },
+  {
+    group: 'Text Overrides Section',
+    keys: ['textOverridesSection', 'textOverridesDesc', 'textGroupGate', 'textGroupHero', 'textGroupParents', 'textGroupCountdown', 'textGroupProgramme', 'textGroupGallery', 'textGroupMessage', 'textGroupClosing', 'textGroupNav', 'textGroupRsvp', 'textGroupCalendar', 'textGroupContact', 'textGroupLocation', 'textGroupMoney', 'textGroupGift']
+  }
+];

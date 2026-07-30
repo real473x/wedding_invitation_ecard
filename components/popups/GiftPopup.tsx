@@ -3,13 +3,13 @@ import { useState } from 'react';
 import { WeddingConfig, Gift } from '@/lib/db';
 import { v4 as uuidv4 } from 'uuid';
 
-import { INVITATION_DICT, Lang } from '@/lib/i18n';
+import { INVITATION_DICT, Lang, getInvitationText } from '@/lib/i18n';
 
-interface Props { config: WeddingConfig; coupleId: string; onClose: () => void; onUpdateGifts?: (g: Gift[]) => void; lang?: Lang; }
+interface Props { config: WeddingConfig; coupleId: string; onClose: () => void; onUpdateGifts?: (g: Gift[]) => void; lang?: Lang; textOverrides?: Record<string, string>; }
 
-export default function GiftPopup({ config, coupleId, onClose, onUpdateGifts, lang }: Props) {
+export default function GiftPopup({ config, coupleId, onClose, onUpdateGifts, lang, textOverrides }: Props) {
   const currentLang: Lang = lang || config.language || 'ms';
-  const t = INVITATION_DICT[currentLang];
+  const t = getInvitationText(currentLang, textOverrides);
   const [gifts, setGifts] = useState<Gift[]>(config.gifts || []);
   const [newItem, setNewItem] = useState('');
   const [newLink, setNewLink] = useState('');

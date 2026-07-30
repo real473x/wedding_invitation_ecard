@@ -3,9 +3,11 @@ import { WeddingConfig } from '@/lib/db';
 import styles from './CoupleMessage.module.css';
 import AdaptiveTextSection from './AdaptiveTextSection';
 
-import { Lang } from '@/lib/i18n';
+import { Lang, getInvitationText } from '@/lib/i18n';
 
-export default function CoupleMessage({ config, style, lang }: { config: WeddingConfig; style?: React.CSSProperties; lang?: Lang }) {
+export default function CoupleMessage({ config, style, lang, textOverrides }: { config: WeddingConfig; style?: React.CSSProperties; lang?: Lang; textOverrides?: Record<string, string> }) {
+  const currentLang: Lang = lang || config.language || 'ms';
+  const t = getInvitationText(currentLang, textOverrides);
   return (
     <AdaptiveTextSection className={`invitation-section ${styles.section}`} style={style}>
       <div className={styles.container}>

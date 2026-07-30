@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { WeddingConfig } from '@/lib/db';
 import styles from './GalleryWishes.module.css';
-import { INVITATION_DICT, Lang } from '@/lib/i18n';
+import { INVITATION_DICT, Lang, getInvitationText } from '@/lib/i18n';
 
 const PLACEHOLDER_PHOTOS = [
   'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=400&h=500&fit=crop',
@@ -12,11 +12,11 @@ const PLACEHOLDER_PHOTOS = [
   'https://images.unsplash.com/photo-1606800052052-a08af7148866?w=400&h=500&fit=crop',
 ];
 
-interface Props { config: WeddingConfig; coupleId: string; style?: React.CSSProperties; lang?: Lang; }
+interface Props { config: WeddingConfig; coupleId: string; style?: React.CSSProperties; lang?: Lang; textOverrides?: Record<string, string>; }
 
-export default function GalleryWishes({ config, coupleId, style, lang }: Props) {
+export default function GalleryWishes({ config, coupleId, style, lang, textOverrides }: Props) {
   const currentLang: Lang = lang || config.language || 'ms';
-  const t = INVITATION_DICT[currentLang];
+  const t = getInvitationText(currentLang, textOverrides);
   const photos = config.photos?.length ? config.photos : PLACEHOLDER_PHOTOS;
   const [current, setCurrent] = useState(0);
   const [showWishForm, setShowWishForm] = useState(false);
@@ -98,7 +98,7 @@ export default function GalleryWishes({ config, coupleId, style, lang }: Props) 
           <p className={`font-script ${styles.wishTitle}`}>{t.wishesTitle}</p>
           <div className={styles.wishesList} ref={wishesListRef}>
             {wishes.length === 0 ? (
-              <p className={styles.noWish}>{currentLang === 'en' ? 'No wishes yet. Be the first! 💌' : 'Tiada ucapan lagi. Jadilah yang pertama! 💌'}</p>
+              <p className={styles.noWish}>{t.galleryNoWishes}</p>
             ) : (
               wishes.slice().reverse().map(w => (
                 <div key={w.id} className={styles.wishCard}>
@@ -169,16 +169,16 @@ export default function GalleryWishes({ config, coupleId, style, lang }: Props) 
               {submitted ? (
                 <div className={styles.submitSuccess}>
                   <div style={{ fontSize: '2.5rem' }}>🎉</div>
-                  <p>{currentLang === 'en' ? 'Thank you for your warm wish!' : 'Terima kasih atas ucapan anda!'}</p>
+                  <p>{t.galleryWishThanks}</p>
                 </div>
               ) : (
                 <form onSubmit={submitWish}>
                   <div className="form-group">
                     <label>{t.yourName}</label>
-                    <input className="form-control" placeholder={currentLang === 'en' ? 'Your name...' : 'Nama...'} value={wishName} onChange={e => setWishName(e.target.value)} required />
+                    <input className="form-control" placeholder={t.galleryWishNamePlaceholder} value={wishName} onChange={e => setWishName(e.target.value)} required />
                   </div>
                   <div className="form-group">
-                    <label>{currentLang === 'en' ? 'Wish / Blessing' : 'Ucapan / Doa'}</label>
+                    <label>{t.galleryWishLabel}</label>
                     <textarea className="form-control" placeholder={t.yourWish} value={wishMsg} onChange={e => setWishMsg(e.target.value)} required rows={4} />
                   </div>
                   <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={submitting}>

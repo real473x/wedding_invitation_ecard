@@ -2,11 +2,11 @@
 import { WeddingConfig } from '@/lib/db';
 import styles from './ProgrammeSection.module.css';
 
-import { INVITATION_DICT, Lang } from '@/lib/i18n';
+import { INVITATION_DICT, Lang, getInvitationText } from '@/lib/i18n';
 
-export default function ProgrammeSection({ config, style, lang }: { config: WeddingConfig; style?: React.CSSProperties; lang?: Lang }) {
+export default function ProgrammeSection({ config, style, lang, textOverrides }: { config: WeddingConfig; style?: React.CSSProperties; lang?: Lang; textOverrides?: Record<string, string> }) {
   const currentLang: Lang = lang || config.language || 'ms';
-  const t = INVITATION_DICT[currentLang];
+  const t = getInvitationText(currentLang, textOverrides);
 
   return (
     <section className={`invitation-section ${styles.section}`} style={style}>

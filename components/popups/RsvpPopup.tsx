@@ -2,13 +2,13 @@
 import { useState } from 'react';
 import { WeddingConfig } from '@/lib/db';
 
-import { INVITATION_DICT, Lang } from '@/lib/i18n';
+import { INVITATION_DICT, Lang, getInvitationText } from '@/lib/i18n';
 
-interface Props { config: WeddingConfig; coupleId: string; onClose: () => void; lang?: Lang; }
+interface Props { config: WeddingConfig; coupleId: string; onClose: () => void; lang?: Lang; textOverrides?: Record<string, string>; }
 
-export default function RsvpPopup({ config, coupleId, onClose, lang }: Props) {
+export default function RsvpPopup({ config, coupleId, onClose, lang, textOverrides }: Props) {
   const currentLang: Lang = lang || config.language || 'ms';
-  const t = INVITATION_DICT[currentLang];
+  const t = getInvitationText(currentLang, textOverrides);
   const [form, setForm] = useState({ name: '', phone: '', attending: 'yes' as 'yes' | 'no', paxCount: 1, wishes: '' });
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
