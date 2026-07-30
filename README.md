@@ -5,23 +5,8 @@ A modern, full-featured digital wedding invitation platform built with **Next.js
 ## 📸 Preview
 
 <!-- Replace the placeholder paths below with your actual screenshot filenames -->
-![Preview](images/01.png)
-![Preview](images/02.png)
-![Preview](images/1.png)
-![Preview](images/2.png)
-![Preview](images/3.png)
-![Preview](images/4.png)
-![Preview](images/5.png)
-![Preview](images/6.png)
-![Preview](images/7.png)
-![Preview](images/8.png)
-![Preview](images/9.png)
-![Preview](images/10.png)
-![Preview](images/11.png)
-![Preview](images/12.png)
-![Preview](images/13.png)
-
-
+![Preview](images/New Ver/panel mode.gif)
+![Preview](images/New Ver/live website.gif)
 
 ## ✨ Features
 
@@ -156,3 +141,39 @@ ewedding/
 ## 📄 License & Disclaimer
 
 This project is free for **non-commercial use only**. Any commercial use, redistribution, or deployment for commercial purposes is strictly prohibited unless prior written agreement and explicit permission are granted by the project owner.
+
+## 📸 Screen Shot 
+**Panel**
+![Preview](images/New Ver/1.png)
+![Preview](images/New Ver/2.png)
+![Preview](images/New Ver/3.png)
+![Preview](images/New Ver/4.png)
+![Preview](images/New Ver/5.png)
+![Preview](images/New Ver/6.png)
+![Preview](images/New Ver/7.png)
+![Preview](images/New Ver/8.png)
+![Preview](images/New Ver/9.png)
+![Preview](images/New Ver/10.png)
+![Preview](images/New Ver/11.png)
+![Preview](images/New Ver/12.png)
+![Preview](images/New Ver/13.png)
+![Preview](images/New Ver/14.png)
+![Preview](images/New Ver/15.png)
+![Preview](images/New Ver/16.png)
+
+**Live Web**
+![Preview](images/New Ver/L1.png)
+![Preview](images/New Ver/L2.png)
+![Preview](images/New Ver/L3.png)
+![Preview](images/New Ver/L4.png)
+![Preview](images/New Ver/L5.png)
+![Preview](images/New Ver/L6.png)
+![Preview](images/New Ver/L7.png)
+![Preview](images/New Ver/L8.png)
+![Preview](images/New Ver/L9.png)
+![Preview](images/New Ver/L10.png)
+![Preview](images/New Ver/L11.png)
+![Preview](images/New Ver/L12.png)
+![Preview](images/New Ver/L13.png)
+![Preview](images/New Ver/L14.png)
+![Preview](images/New Ver/L15.png)
