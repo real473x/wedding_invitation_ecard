@@ -1,0 +1,127 @@
+.gate {
+  background: var(--color-gate-bg);
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  transition: opacity 0.55s ease, transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 1;
+  transform: scale(1);
+}
+.gateClosing {
+  opacity: 0;
+  transform: scale(1.06);
+  pointer-events: none;
+}
+.gateWrap {
+  position: absolute; inset: 0; display: flex;
+  transform-style: preserve-3d; perspective: 1200px;
+  pointer-events: none;
+}
+.gateLeft, .gateRight {
+  flex: 1; height: 100%;
+  background: var(--color-gate-bg);
+  border: none;
+  position: relative; overflow: hidden;
+  transition: transform 1.2s cubic-bezier(.77,0,.18,1);
+  transform-origin: left center;
+}
+.gateRight { transform-origin: right center; }
+.gateLeft { border-right: 2px solid var(--color-primary-light); }
+.gateRight { border-left: 2px solid var(--color-primary-light); }
+.gatePattern {
+  position: absolute; inset: 0;
+  background: var(--gate-pattern);
+}
+.gatePattern::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at center, rgba(201,168,76,.05) 0%, transparent 70%);
+}
+.gateLatch {
+  position: absolute; right: -6px; top: 50%;
+  transform: translateY(-50%);
+  width: 12px; height: 48px;
+  background: var(--color-primary-light);
+  border-radius: 6px; z-index: 2;
+  box-shadow: 0 2px 8px rgba(0,0,0,.4);
+}
+.gateOpen .gateLeft  { transform: perspective(1200px) rotateY(-115deg); }
+.gateOpen .gateRight { transform: perspective(1200px) rotateY(115deg); }
+/* Floral top border on gate */
+.gateLeft::before, .gateRight::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 180px;
+  background: linear-gradient(to bottom, rgba(201,168,76,.15), transparent);
+}
+.gateLeft::after, .gateRight::after {
+  content: '';
+  position: absolute; bottom: 0; left: 0; right: 0; height: 180px;
+  background: linear-gradient(to top, rgba(201,168,76,.15), transparent);
+}
+
+/* Particles */
+.particles { position: absolute; inset: 0; pointer-events: none; z-index: 2; overflow: hidden; }
+.particle {
+  position: absolute; top: -20px;
+  background: var(--particle-color);
+  border-radius: 50%;
+  opacity: .7;
+  animation: particleFall linear infinite;
+}
+@keyframes particleFall {
+  0%   { transform: translateY(0) rotate(0deg); opacity: .8; }
+  100% { transform: translateY(110dvh) rotate(720deg); opacity: 0; }
+}
+
+/* Content overlay */
+.content {
+  position: relative; z-index: 10;
+  text-align: center; display: flex; flex-direction: column;
+  align-items: center; gap: 0.85rem;
+  padding: 2.5rem 2rem;
+  animation: fadeInUp .8s ease both;
+  transition: opacity .6s ease, transform .6s ease;
+  background: var(--color-surface);
+  border: 4px double var(--color-border);
+  border-radius: 16px;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.4);
+  max-width: 380px;
+  width: 90%;
+}
+.contentFadeOut { opacity: 0; transform: scale(.95); pointer-events: none; }
+.topOrnament { color: var(--color-primary); font-size: 1.5rem; letter-spacing: 0.5em; animation: shimmer 2s ease infinite; }
+@keyframes shimmer { 0%,100%{opacity:.5;} 50%{opacity:1;} }
+.invitedText { color: var(--color-primary); font-size: clamp(1rem, 4vw, 1.25rem); letter-spacing: 0.05em; }
+.coupleName {
+  font-family: var(--font-heading);
+  color: var(--color-text);
+  font-size: clamp(2rem, 8vw, 3rem);
+  font-weight: 700;
+  line-height: 1.1;
+  display: flex; flex-direction: column; align-items: center; gap: 0.1em;
+}
+.ampersand { font-family: var(--font-script); color: var(--color-primary); font-size: 0.75em; margin: -0.1em 0; }
+.date { color: var(--color-text-muted); font-size: clamp(0.8rem, 3vw, 0.95rem); letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600; }
+.openBtn {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+  color: #fff; padding: 0.85rem 2rem;
+  border-radius: 50px; font-size: 1rem; font-weight: 600;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  margin-top: 0.5rem;
+  display: flex; align-items: center; gap: 0.5rem;
+  animation: float 3s ease-in-out infinite;
+  border: none;
+}
+.openBtn:hover { transform: translateY(-3px) scale(1.03); box-shadow: 0 12px 32px rgba(0,0,0,0.3); animation: none; }
+@keyframes float { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-6px);} }
+@keyframes fadeInUp { from{opacity:0;transform:translateY(24px);} to{opacity:1;transform:translateY(0);} }
+
+@media (max-width: 600px) {
+  .content { padding: 3rem 1.75rem !important; gap: 1.1rem !important; }
+  .invitedText { font-size: 1.25rem !important; }
+  .coupleName { font-size: 2.8rem !important; }
+  .date { font-size: 0.95rem !important; }
+  .openBtn { font-size: 1.1rem !important; padding: 0.95rem 2.25rem !important; }
+}

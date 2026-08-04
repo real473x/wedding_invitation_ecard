@@ -1,0 +1,127 @@
+'use client';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { ADMIN_DICT, Lang, getAdminText } from '@/lib/i18n';
+import styles from './login.module.css';
+
+export default function SuperAdminLogin() {
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [firstTime, setFirstTime] = useState(false);
+  const [theme, setTheme] = useState('dark');
+  const [lang, setLang] = useState<Lang>('ms');
+  const [globalTextOverrides, setGlobalTextOverrides] = useState<Record<string, string>>({});
+  const router = useRouter();
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('admin-theme') || 'dark';
+    const savedLang = (localStorage.getItem('admin-lang') as Lang) || 'ms';
+    setTheme(savedTheme);
+    setLang(savedLang);
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/config/global').then(res => res.json()).then(data => {
+      if (data.globalTextOverrides) setGlobalTextOverrides(data.globalTextOverrides);
+    }).catch(console.error);
+  }, []);
+
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    localStorage.setItem('admin-theme', next);
+    document.documentElement.setAttribute('data-theme', next);
+  };
+
+  const toggleLang = () => {
+    const next: Lang = lang === 'ms' ? 'en' : 'ms';
+    setLang(next);
+    localStorage.setItem('admin-lang', next);
+  };
+
+  const t = getAdminText(lang, globalTextOverrides);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch('/api/super-admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error); return; }
+      if (data.firstTime) setFirstTime(true);
+      router.push('/super-admin');
+    } catch {
+      setError(t.connError);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className={styles.page}>
+      <div style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', display: 'flex', gap: '0.5rem', zIndex: 1000 }}>
+
+        <button 
+          onClick={toggleTheme}
+          style={{
+            background: 'rgba(128,128,128,0.15)',
+            border: '1px solid var(--admin-border)',
+            color: 'var(--admin-text)',
+            borderRadius: '50px',
+            padding: '0.45rem 1rem',
+            fontSize: '0.8rem',
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+          title={t.toggleThemeTooltip}
+        >
+          {theme === 'dark' ? t.lightMode : t.darkMode}
+        </button>
+      </div>
+
+      <div className={styles.card}>
+        <div className={styles.logo}>
+          <span className={styles.logoIcon}>💍</span>
+          <h1>eWedding</h1>
+          <p>{t.superAdminTitle}</p>
+        </div>
+        <form onSubmit={handleSubmit} className={styles.form}>
+          {firstTime && (
+            <div className={styles.notice}>
+              {t.superAdminLoginSuccess}
+            </div>
+          )}
+          <div className="form-group">
+            <label>{t.password}</label>
+            <input
+              type="password"
+              className="form-control"
+              placeholder={t.enterPassword}
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+              autoFocus
+            />
+          </div>
+          {error && <div className={styles.error}>{error}</div>}
+          <button type="submit" className={`btn btn-primary ${styles.submitBtn}`} disabled={loading}>
+            {loading ? <span className={styles.spinner} /> : null}
+            {loading ? t.loggingIn : t.loginBtn}
+          </button>
+          <p className={styles.hint}>
+            {t.superAdminLoginHint}
+          </p>
+        </form>
+      </div>
+      <div className={styles.bg} />
+    </div>
+  );
+}
