@@ -21,10 +21,16 @@ A modern, full-featured digital wedding invitation platform built with **Next.js
 - **Light/Dark Theme** — Adaptive theme support
 
 ### ✨ Visual Design Builder Tab (`✨ Design Builder`) `[🧪 Experimental]`
+- **🎯 Individual Text Item & Component Customizers** — Mode Switcher toggle (`🎯 Specific Text Items` vs `👑 General Categories`) for zero setting duplication. Customize every text element, button, countdown circle, calendar card, and frame box independently.
+- **✂️ Separated Header & Label Elements** — Distinct customizer controls for date labels (`dateLabel`), venue labels (`venueLabel`), parent roles (`parentRoleGroom`/`parentRoleBride`), event times (`programmeTime`), and event details (`countdownDetailLabel`, `countdownDetailValue`, `countdownDetailSub`).
+- **↔️ Dual Collapsible Spacing & Margins** —
+  - **`↔️ Text Spacing & Margins`**: Fine-tune inner text padding (top, bottom, left, right), letter spacing (0-12px), and line height (1.0-3.0).
+  - **`📦 Section Spacing & Margins`**: Control outer container block margins (-40px to 120px) to adjust vertical gaps between sections (e.g. Quote Text and Venue Address).
+- **🎨 Background, Border & Frame Styles** — Color pickers for background color, border color, and corner border radius (0-50px) on buttons (`gateOpenBtn`, `galleryWishBtn`), countdown digit circles (`countdownCircles`), calendar cards (`countdownCalendarCard`), and section card frames (`heroFrame`, `parentsCard`, `programmeCard`, `messageCard`, `galleryWishCard`).
 - **🎬 Page Transition Effects [🧪 Experimental]** — 12 entrance transitions (Soft Fade, Slide Up, Slide Left, Zoom In, Page Turn 3D, Curtain Reveal, Blur Reveal, Float Up, Split Reveal, Glow Pulse, Bounce In) with live hover preview and ON/OFF enable/disable toggles per section.
 - **🖼️ Decorative Frames & Borders [🧪 Experimental]** — 12 custom border frame styles (Gold Ornate, Regal Floral, Vintage Corner, Minimal Line, Soft Shadow, Arch Frame, etc.) with custom color pickers and line thickness sliders.
 - **🖋️ Typography & Google Fonts [🧪 Experimental]** — Preset font pairings and Google Font dropdown selectors for Headings, Script Accents, and Body text.
-- **🖼️ Background Darkness & Overlay [🧪 Experimental]** — Custom opacity sliders and color pickers for section background overlays.
+- **✨ Dynamic Live Sample Badges** — Visual builder sample badges dynamically match the exact live preview text using real config and override data.
 
 ### 🎥 iPhone 17 Pro Video & Screen Recorder `[🧪 Experimental]`
 - Automatic video recording tool designed to record high-resolution MP4/WebM videos of mobile eCard invitations inside an iPhone 17 Pro mockup frame.
@@ -64,15 +70,18 @@ A modern, full-featured digital wedding invitation platform built with **Next.js
 ### 👑 Super Admin Panel (`/super-admin`)
 - Multi-couple account management & creation with subscription packages
 - **Granular Feature Toggles**: Enable/disable feature modules (RSVP, Money, Gift, Gallery, Programme, Contacts, Location, Visual Builder, Music, Text Overrides) AND live section displays per couple.
-- Global Text Editor (Admin/Login) with default system language control & custom `.json` language import.
+- **Global Text Editor (Admin/Login)**: Edit and override ALL default website texts, placeholders, popup messages, floating nav labels, and button hover tooltips globally across all couples.
 - Financial tracker & account status management.
 
 ## 🆕 Recent Updates
+- **🎯 Separated Item Customizers & Dynamic Samples**: Individual styling for all text labels, buttons, countdown circles, calendar cards, event details (Masa & Tempat), and section card frames with dynamic live sample text badges.
+- **↔️ Dual Collapsible Spacing (Text vs Section Margins)**: Independent control over inner text padding/letter spacing and outer container block margins (-40px to 120px) to adjust spacing between elements.
+- **🎨 Button, Circle & Frame Styling**: Background color, border color, and corner border radius (0-50px) customization for buttons, countdown circles, calendar cards, and section card frames.
+- **🌐 Full English i18n & Superadmin Global Text Overrides**: Converted all website texts, placeholders, popups, and tooltips to English, with full Superadmin capability to edit every string in Global Text Settings.
 - **Visual Design Builder `[🧪 Experimental]`**: Added 🎬 Page Transition Effects, 🖼️ Decorative Frames, 🖋️ Custom Typography, and 🖼️ Overlay Controls with instant live iframe hover previews and individual ON/OFF disable toggles.
 - **🎥 iPhone 17 Pro Video Recorder `[🧪 Experimental]`**: Pop-up video recorder tool featuring iPhone 17 Pro mockup frame and audio capture.
 - **💌 Dedicated Wish Record Manager (`💌 Wishes Record`)**: Full moderation suite (View, Edit, Delete, Manual Add, and Hide/Unhide toggle) to prevent malicious or unwanted guest wishes on live invitations.
 - **👑 Granular SuperAdmin Feature Module & Live Section Toggles**: Complete control per couple account to toggle feature modules and live invitation screens on or off.
-- **🌐 English-First & Custom JSON Language Support**: Default primary language set to English, with SuperAdmin capability to import custom `.json` language files.
 
 ## 🚀 Getting Started
 
