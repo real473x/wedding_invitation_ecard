@@ -122,7 +122,7 @@ export default function MoneyPopup({ config, onClose, lang, textOverrides }: Pro
                     gap: '0.25rem',
                     borderRadius: '6px'
                   }}
-                  title="Salin No. Akaun"
+                  title={t.copyAccountNoTooltip}
                 >
                   📋 Salin
                 </button>

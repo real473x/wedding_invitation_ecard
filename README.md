@@ -1,25 +1,46 @@
 # 💍 eWedding — Digital Wedding Invitation Platform
 
-A modern, full-featured digital wedding invitation platform built with **Next.js 15**. Create beautiful, mobile-first wedding invitation cards with RSVP, gift registry, guest management, and a powerful admin panel — all in Bahasa Melayu.
+A modern, full-featured digital wedding invitation platform built with **Next.js 15**. Create beautiful, mobile-first wedding invitation cards with RSVP, gift registry, guest management, visual design builder, and a powerful admin panel — fully in English.
 
-## 📸 Preview
+<!-- ## 📸 Preview
 
-<!-- Replace the placeholder paths below with your actual screenshot filenames -->
 ![Preview](images/New%20Ver/panel%20mode.gif)
-![Preview](images/New%20Ver/live%20website.gif)
+![Preview](images/New%20Ver/live%20website.gif) -->
 
 ## ✨ Features
 
 ### 🎉 eCard Invitation
-- **Gate Screen** — Animated cover page with couple names
+- **Gate Screen** — Animated cover page with door opening animation and couple names
 - **Invitation Hero** — Elegant wedding card with event details
 - **Parents Section** — Family names with beautiful typography
 - **Countdown Timer** — Live countdown to the wedding day
-- **Programme / Aturcara** — Scrollable event timeline
+- **Programme / Event Schedule** — Scrollable event timeline
 - **Gallery & Wishes** — Photo gallery with public wish board
 - **Closing Screen** — Thank-you message with optional photo
 - **Floating Navigation** — Quick access to RSVP, Calendar, Contact, Location, Money Gift, and Gift Registry
 - **Light/Dark Theme** — Adaptive theme support
+
+### ✨ Visual Design Builder Tab (`✨ Design Builder`) `[🧪 Experimental]`
+- **🎯 Individual Text Item & Component Customizers** — Mode Switcher toggle (`🎯 Specific Text Items` vs `👑 General Categories`) for zero setting duplication. Customize every text element, button, countdown circle, calendar card, and frame box independently.
+- **✂️ Separated Header & Label Elements** — Distinct customizer controls for date labels (`dateLabel`), venue labels (`venueLabel`), parent roles (`parentRoleGroom`/`parentRoleBride`), event times (`programmeTime`), and event details (`countdownDetailLabel`, `countdownDetailValue`, `countdownDetailSub`).
+- **↔️ Dual Collapsible Spacing & Margins** —
+  - **`↔️ Text Spacing & Margins`**: Fine-tune inner text padding (top, bottom, left, right), letter spacing (0-12px), and line height (1.0-3.0).
+  - **`📦 Section Spacing & Margins`**: Control outer container block margins (-40px to 120px) to adjust vertical gaps between sections (e.g. Quote Text and Venue Address).
+- **🎨 Background, Border & Frame Styles** — Color pickers for background color, border color, and corner border radius (0-50px) on buttons (`gateOpenBtn`, `galleryWishBtn`), countdown digit circles (`countdownCircles`), calendar cards (`countdownCalendarCard`), and section card frames (`heroFrame`, `parentsCard`, `programmeCard`, `messageCard`, `galleryWishCard`).
+- **🎬 Page Transition Effects [🧪 Experimental]** — 12 entrance transitions (Soft Fade, Slide Up, Slide Left, Zoom In, Page Turn 3D, Curtain Reveal, Blur Reveal, Float Up, Split Reveal, Glow Pulse, Bounce In) with live hover preview and ON/OFF enable/disable toggles per section.
+- **🖼️ Decorative Frames & Borders [🧪 Experimental]** — 12 custom border frame styles (Gold Ornate, Regal Floral, Vintage Corner, Minimal Line, Soft Shadow, Arch Frame, etc.) with custom color pickers and line thickness sliders.
+- **🖋️ Typography & Google Fonts [🧪 Experimental]** — Preset font pairings and Google Font dropdown selectors for Headings, Script Accents, and Body text.
+- **✨ Dynamic Live Sample Badges** — Visual builder sample badges dynamically match the exact live preview text using real config and override data.
+
+### 🎥 iPhone 17 Pro Video & Screen Recorder `[🧪 Experimental]`
+- Automatic video recording tool designed to record high-resolution MP4/WebM videos of mobile eCard invitations inside an iPhone 17 Pro mockup frame.
+- Custom duration control, frame formatting, and high-quality audio recording integration.
+
+### 💌 Guest Wish Record Manager (`💌 Wishes Record`)
+- Dedicated management tab for guest wishes submitted via "Send Wish".
+- Quick Stats Bar (Total Wishes, Visible Live, Hidden Messages) and filtering tabs (`All`, `Visible`, `Hidden`).
+- **`👁️ Show / 🙈 Hide` Toggle**: Instantly hide inappropriate or malicious public messages from displaying on live website.
+- Inline editing, deletion, and manual wish creation.
 
 ### 🎁 Gift Registry
 - Couple-curated gift list with product images and prices
@@ -39,24 +60,28 @@ A modern, full-featured digital wedding invitation platform built with **Next.js
 
 ### 🔧 Admin Panel | Couple Panel (`/admin`)
 - Full wedding configuration editor
-- Theme customization
+- Theme & Visual Design Builder customization
 - Section visibility toggles
-- Gift management with image/price scrapers and gear settings
-- RSVP & wishes viewer with statistics
+- Dedicated Wish Messages Record manager (`💌 Wishes Record`)
+- Gift management with image/price scrapers and settings
+- RSVP list and statistics
 - Bank & QR code management
 
 ### 👑 Super Admin Panel (`/super-admin`)
-- Multi-couple management
-- Account creation with subscription packages
-- Payment/accounting tracker
-- Credential management & password reset
+- Multi-couple account management & creation with subscription packages
+- **Granular Feature Toggles**: Enable/disable feature modules (RSVP, Money, Gift, Gallery, Programme, Contacts, Location, Visual Builder, Music, Text Overrides) AND live section displays per couple.
+- **Global Text Editor (Admin/Login)**: Edit and override ALL default website texts, placeholders, popup messages, floating nav labels, and button hover tooltips globally across all couples.
+- Financial tracker & account status management.
 
 ## 🆕 Recent Updates
-- **Comprehensive Text Editability**: 100% of live invitation screen texts (Parents, Hero Date/Venue, Gallery, Countdown) are now exposed for editing via the admin dictionary, allowing full localization
-- **Updated Financial Tracker**: Full CRUD functionality added.
-- **Texts Global UI Overhaul**: Super Admin text settings revamped with a responsive grid layout, auto-resizing textareas, override toggle switches, and a dedicated 'Default' reset button.
-- **Enchance UI Theme**: Adopted a sleek, high-contrast dark-grey aesthetic. Refactored hundreds of inline CSS colors into dynamic variables, ensuring flawless text visibility and contrast across both Dark and Light themes.
-- **Language Toggle Removal**: Streamlined the admin interface by removing the `en|ms` toggle from the dashboards and login pages.
+- **🎯 Separated Item Customizers & Dynamic Samples**: Individual styling for all text labels, buttons, countdown circles, calendar cards, event details (Masa & Tempat), and section card frames with dynamic live sample text badges.
+- **↔️ Dual Collapsible Spacing (Text vs Section Margins)**: Independent control over inner text padding/letter spacing and outer container block margins (-40px to 120px) to adjust spacing between elements.
+- **🎨 Button, Circle & Frame Styling**: Background color, border color, and corner border radius (0-50px) customization for buttons, countdown circles, calendar cards, and section card frames.
+- **🌐 Full English i18n & Superadmin Global Text Overrides**: Converted all website texts, placeholders, popups, and tooltips to English, with full Superadmin capability to edit every string in Global Text Settings.
+- **Visual Design Builder `[🧪 Experimental]`**: Added 🎬 Page Transition Effects, 🖼️ Decorative Frames, 🖋️ Custom Typography, and 🖼️ Overlay Controls with instant live iframe hover previews and individual ON/OFF disable toggles.
+- **🎥 iPhone 17 Pro Video Recorder `[🧪 Experimental]`**: Pop-up video recorder tool featuring iPhone 17 Pro mockup frame and audio capture.
+- **💌 Dedicated Wish Record Manager (`💌 Wishes Record`)**: Full moderation suite (View, Edit, Delete, Manual Add, and Hide/Unhide toggle) to prevent malicious or unwanted guest wishes on live invitations.
+- **👑 Granular SuperAdmin Feature Module & Live Section Toggles**: Complete control per couple account to toggle feature modules and live invitation screens on or off.
 
 ## 🚀 Getting Started
 
@@ -101,7 +126,7 @@ ewedding/
 │   ├── super-admin/       # Super admin panel
 │   ├── login/             # Login page
 │   └── api/               # API routes
-│       ├── couple/        # Couple CRUD, upload, gifts
+│       ├── couple/        # Couple CRUD, upload, gifts, wishes
 │       ├── invitation/    # Public invitation data
 │       ├── scrape-link/   # Product image scraper
 │       ├── scrape-price/  # Product price scraper
@@ -109,13 +134,18 @@ ewedding/
 │       ├── search-price/  # Yahoo price search fallback
 │       └── super-admin/   # Super admin API
 ├── components/
-│   ├── invitation/        # Invitation section components
+│   ├── admin/             # Admin tabs & iPhone Recorder Modal
+│   ├── invitation/        # Invitation section components & SectionFrame
 │   ├── nav/               # Floating navigation
 │   └── popups/            # Modal popups (RSVP, Gift, etc.)
 ├── data/
 │   └── db.example.json    # Database template (copy to db.json)
 ├── lib/
 │   ├── db.ts              # Database read/write utilities
+│   ├── i18n.ts            # Admin & Live dictionary definitions
+│   ├── transitions.ts     # 12 Page Transition Effect presets
+│   ├── decorations.ts     # 12 Border Frame presets
+│   ├── typography.ts      # Font pairings & Google Fonts
 │   └── themes.ts          # Theme definitions
 ├── hooks/                 # Custom React hooks
 └── public/
@@ -132,17 +162,12 @@ ewedding/
 - **Database**: JSON file-based (no external DB required)
 - **Image Processing**: Built-in scraper APIs
 
-## 📝 Notes
-
-- The database is a simple JSON file (`data/db.json`). For production, consider migrating to a proper database.
-- User-uploaded files are stored in `public/uploads/`.
-- The product image and price scrapers work without API keys by parsing HTML metadata and search engine results.
-
 ## 📄 License & Disclaimer
 
 This project is free for **non-commercial use only**. Any commercial use, redistribution, or deployment for commercial purposes is strictly prohibited unless prior written agreement and explicit permission are granted by the project owner.
 
-## 📸 Screen Shot 
+## 📸 Screenshots
+
 **Panel**
 <details>
 <summary>Click to expand Panel Screenshots</summary>

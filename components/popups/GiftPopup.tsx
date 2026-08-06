@@ -211,7 +211,7 @@ export default function GiftPopup({ config, coupleId, onClose, onUpdateGifts, la
                     alt={g.item} 
                     style={{ width: 48, height: 48, borderRadius: '8px', objectFit: 'cover', border: '1px solid var(--color-border)', flexShrink: 0, cursor: 'pointer' }} 
                     onClick={() => setActiveLightboxUrl(g.imageUrl || null)}
-                    title="Klik untuk papar gambar besar"
+                    title={t.viewLargeImageTooltip}
                   />
                 ) : (
                   <div style={{ width: 48, height: 48, borderRadius: '8px', background: 'var(--color-surface-2)', border: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', flexShrink: 0 }}>
@@ -269,7 +269,7 @@ export default function GiftPopup({ config, coupleId, onClose, onUpdateGifts, la
                         type="button"
                         style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: '0.85rem' }}
                         onClick={() => setShowSettings(!showSettings)}
-                        title="Konfigurasi Carian"
+                        title={t.configSearchTooltip}
                       >
                         ⚙️
                       </button>
@@ -315,7 +315,7 @@ export default function GiftPopup({ config, coupleId, onClose, onUpdateGifts, la
                         type="button"
                         style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: '0.85rem' }}
                         onClick={() => setShowPriceSettings(!showPriceSettings)}
-                        title="Konfigurasi Carian Harga"
+                        title={t.configPriceSearchTooltip}
                       >
                         ⚙️
                       </button>

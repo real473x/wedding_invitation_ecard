@@ -25,9 +25,9 @@
 
 @media (max-width: 600px) {
   .container { gap: 0.5rem; }
-  .label { font-size: 1.8rem !important; }
-  .time { font-size: 0.8rem !important; }
-  .eventText { font-size: 0.88rem !important; }
+  .label { font-size: 1.8rem; }
+  .time { font-size: 0.8rem; }
+  .eventText { font-size: 0.88rem; }
   .item { grid-template-columns: 72px 24px 1fr !important; }
   .eventCard { padding: 0.4rem 0.65rem !important; }
   .eventCol { padding-bottom: 0.75rem !important; padding-left: 0.5rem !important; }

@@ -26,21 +26,21 @@
 .topDecor, .bottomDecor { display: flex; align-items: center; gap: 0.75rem; width: 100%; }
 .line { flex: 1; height: 1px; background: linear-gradient(to right, transparent, var(--color-primary-light), transparent); }
 .star { color: var(--color-primary-light); font-size: 0.7rem; flex-shrink: 0; }
-.subtitle { font-size: clamp(1rem, 3.5vw, 1.2rem); color: var(--color-primary); letter-spacing: 0.05em; margin-bottom: 0.25rem; }
+.subtitle { font-size: var(--section-accent-size, clamp(1rem, 3.5vw, 1.2rem)); color: var(--color-primary); letter-spacing: 0.05em; margin-bottom: 0.25rem; }
 .groom, .bride {
-  font-family: var(--font-heading); font-size: clamp(1.3rem, 5vw, 1.8rem);
+  font-family: var(--font-heading); font-size: var(--section-heading-size, clamp(1.3rem, 5vw, 1.8rem));
   color: var(--color-text); font-weight: 700; line-height: 1.2; margin: 0;
 }
-.ampersand { font-size: clamp(1.5rem, 6vw, 2.2rem); color: var(--color-primary); }
+.ampersand { font-size: var(--section-accent-size, clamp(1.5rem, 6vw, 2.2rem)); color: var(--color-primary); }
 .dateWrap { display: flex; align-items: center; gap: 0.75rem; width: 100%; margin: 0.25rem 0; }
 .dateLine { flex: 1; height: 1px; background: var(--color-border); opacity: 0.4; }
 .dateContent { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
 .dateLabel { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--color-text-muted); }
-.dateText { font-family: var(--font-heading); font-size: clamp(0.85rem, 3vw, 1rem); color: var(--color-primary); font-weight: 600; white-space: nowrap; }
+.dateText { font-family: var(--font-heading); font-size: var(--section-body-size, clamp(0.85rem, 3vw, 1rem)); color: var(--color-primary); font-weight: 600; white-space: nowrap; }
 .venueWrap { display: flex; flex-direction: column; align-items: center; gap: 0.2rem; }
 .venueLabel { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--color-text-muted); }
-.venueName { font-family: var(--font-heading); font-size: clamp(1rem, 3.5vw, 1.2rem); color: var(--color-text); font-weight: 600; }
-.venueAddr { font-size: 0.8rem; color: var(--color-text-muted); }
+.venueName { font-family: var(--font-heading); font-size: var(--section-heading-size, clamp(1rem, 3.5vw, 1.2rem)); color: var(--color-text); font-weight: 600; }
+.venueAddr { font-size: var(--section-body-size, 0.8rem); color: var(--color-text-muted); }
 .quoteWrap {
   border-left: 3px solid var(--color-primary-light);
   text-align: left;
@@ -50,19 +50,19 @@
   margin-top: 1.2rem;
   padding: .5rem .75rem;
 }
-.quote { font-style: italic; font-size: 0.85rem; color: var(--color-text-muted); line-height: 1.5; }
-.quoteSource { font-size: 0.75rem; color: var(--color-primary); margin-top: 0.25rem; font-weight: 600; }
+.quote { font-style: italic; font-size: var(--section-body-size, 0.85rem); color: var(--color-text-muted); line-height: 1.5; }
+.quoteSource { font-size: var(--section-body-size, 0.75rem); color: var(--color-primary); margin-top: 0.25rem; font-weight: 600; }
 
 @media (max-width: 600px) {
   .hero { padding: 0.75rem 1rem 80px; }
-  .subtitle { font-size: 0.95rem !important; }
-  .groom, .bride { font-size: 1.4rem !important; }
-  .ampersand { font-size: 1.7rem !important; }
-  .dateText { font-size: 0.9rem !important; }
-  .venueName { font-size: 1rem !important; }
-  .venueAddr { font-size: 0.78rem !important; }
-  .quote { font-size: 0.78rem !important; }
-  .quoteSource { font-size: 0.72rem !important; }
+  .subtitle { font-size: 0.95rem; }
+  .groom, .bride { font-size: 1.4rem; }
+  .ampersand { font-size: 1.7rem; }
+  .dateText { font-size: 0.9rem; }
+  .venueName { font-size: 1rem; }
+  .venueAddr { font-size: 0.78rem; }
+  .quote { font-size: 0.78rem; }
+  .quoteSource { font-size: 0.72rem; }
   .border {
     padding: 1.25rem 1.25rem !important;
   }

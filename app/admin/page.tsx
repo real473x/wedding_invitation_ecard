@@ -1,26 +1,32 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { WeddingConfig, ProgrammeItem, Gift, Contact, RSVP, Wish } from '@/lib/db';
 import styles from './admin.module.css';
 import { v4 as uuidv4 } from 'uuid';
 import { ADMIN_DICT, Lang, formatPackageName, INVITATION_DICT, INVITATION_TEXT_KEYS, getAdminText } from '@/lib/i18n';
+import DesignBuilderTab from '@/components/admin/DesignBuilderTab';
+import IPhoneRecorderModal from '@/components/admin/iPhoneRecorderModal';
 
-const getTabs = (t: Record<string, string>) => [
-  { key: 'tema', label: t.tabTema },
-  { key: 'latar', label: t.tabLatar },
-  { key: 'skrin', label: t.tabSkrin },
-  { key: 'teks', label: t.tabTeks },
-  { key: 'maklumat', label: t.tabMaklumat },
-  { key: 'media', label: t.tabMedia },
-  { key: 'aturcara', label: t.tabAturcara },
-  { key: 'kenalan', label: t.tabKenalan },
-  { key: 'lokasi', label: t.tabLokasi },
-  { key: 'kewangan', label: t.tabKewangan },
-  { key: 'hadiah', label: t.tabHadiah },
-  { key: 'rsvp', label: t.tabRsvp },
-  { key: 'akaun', label: t.tabAkaun },
-];
+import { FeatureToggles } from '@/lib/db';
+
+const getTabs = (t: Record<string, string>, ft?: FeatureToggles) => [
+  { key: 'tema', label: t.tabTema, enabled: true },
+  { key: 'reka', label: t.tabReka || '✨ Reka Bentuk', enabled: ft?.enableDesignBuilder !== false },
+  { key: 'latar', label: t.tabLatar, enabled: true },
+  { key: 'skrin', label: t.tabSkrin, enabled: true },
+  { key: 'teks', label: t.tabTeks, enabled: true },
+  { key: 'maklumat', label: t.tabMaklumat, enabled: true },
+  { key: 'media', label: t.tabMedia, enabled: ft?.enableGallery !== false },
+  { key: 'aturcara', label: t.tabAturcara, enabled: ft?.enableProgramme !== false },
+  { key: 'kenalan', label: t.tabKenalan, enabled: ft?.enableContact !== false },
+  { key: 'lokasi', label: t.tabLokasi, enabled: ft?.enableLocation !== false },
+  { key: 'kewangan', label: t.tabKewangan, enabled: ft?.enableMoney !== false },
+  { key: 'hadiah', label: t.tabHadiah, enabled: ft?.enableGift !== false },
+  { key: 'rsvp', label: t.tabRsvp, enabled: ft?.enableRsvp !== false },
+  { key: 'ucapan', label: t.tabUcapan || '💌 Rekod Ucapan', enabled: ft?.enableGallery !== false },
+  { key: 'akaun', label: t.tabAkaun, enabled: true },
+].filter(tab => tab.enabled);
 
 const THEMES = [
   { key: 'malay', label: 'Melayu', emoji: '🌙', colors: ['#8B6914', '#1B4332'] },
@@ -124,12 +130,33 @@ export default function CoupleAdminPage() {
   const [toast, setToast] = useState('');
   const [dirty, setDirty] = useState(false);
   const [theme, setTheme] = useState('dark');
-  const [lang, setLang] = useState<Lang>('ms');
+  const [lang, setLang] = useState<Lang>('en');
   const [uploadingQr, setUploadingQr] = useState(false);
+  const [showPreview, setShowPreview] = useState(true);
+  const [showRecorderModal, setShowRecorderModal] = useState(false);
+  const [iframeKey, setIframeKey] = useState(0);
+  const [iframeLoading, setIframeLoading] = useState(false);
+  const [iframeScale, setIframeScale] = useState(248 / 390); // default: 260px frame
+  const phoneFrameRef = useRef<HTMLDivElement>(null);
+
+  // Recompute iframe scale when the phone frame resizes
+  useEffect(() => {
+    if (!phoneFrameRef.current) return;
+    const obs = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        const frameW = entry.contentRect.width;
+        // subtract 12px (6px border each side)
+        const innerW = Math.max(frameW - 12, 100);
+        setIframeScale(innerW / 390);
+      }
+    });
+    obs.observe(phoneFrameRef.current);
+    return () => obs.disconnect();
+  }, [showPreview]);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('admin-theme') || 'dark';
-    const savedLang = (localStorage.getItem('admin-lang') as Lang) || 'ms';
+    const savedLang = (localStorage.getItem('admin-lang') as Lang) || 'en';
     setTheme(savedTheme);
     setLang(savedLang);
     document.documentElement.setAttribute('data-theme', savedTheme);
@@ -167,7 +194,7 @@ export default function CoupleAdminPage() {
   };
 
   const t = getAdminText(lang, globalTextOverrides);
-  const TABS = getTabs(t);
+  const TABS = getTabs(t, config?.featureToggles);
 
   async function handleQrUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -222,7 +249,19 @@ export default function CoupleAdminPage() {
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(''), 3000); }
 
   function update(partial: Partial<WeddingConfig>) {
-    setConfig(prev => prev ? { ...prev, ...partial } : prev);
+    setConfig(prev => {
+      if (!prev) return prev;
+      const updated = { ...prev, ...partial };
+      // Broadcast live update to preview iframe
+      const iframe = document.querySelector<HTMLIFrameElement>('iframe');
+      if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage({
+          type: 'PREVIEW_UPDATE_CONFIG',
+          config: updated,
+        }, '*');
+      }
+      return updated;
+    });
     setDirty(true);
   }
 
@@ -235,7 +274,17 @@ export default function CoupleAdminPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config),
       });
-      if (res.ok) { setDirty(false); showToast('✅ Tetapan disimpan!'); }
+      if (res.ok) {
+        setDirty(false);
+        showToast('✅ Tetapan disimpan!');
+        const iframe = document.querySelector<HTMLIFrameElement>('iframe');
+        if (iframe && iframe.contentWindow) {
+          iframe.contentWindow.postMessage({
+            type: 'PREVIEW_UPDATE_CONFIG',
+            config: config,
+          }, '*');
+        }
+      }
       else showToast('❌ Ralat menyimpan');
     } finally { setSaving(false); }
   }
@@ -271,7 +320,7 @@ export default function CoupleAdminPage() {
                   color: statusMode === 'off' || (statusMode === 'auto' && daysRemaining <= 0) ? '#fca5a5' : daysRemaining < 7 ? '#fcd34d' : '#52b788',
                   border: `1px solid ${statusMode === 'off' || (statusMode === 'auto' && daysRemaining <= 0) ? 'rgba(239, 68, 68, 0.25)' : daysRemaining < 7 ? 'rgba(245, 158, 11, 0.25)' : 'rgba(82, 183, 136, 0.25)'}`
                 }}>
-                  {statusMode === 'on' ? '♾️ Aktif Selamanya' : statusMode === 'off' ? '🔒 Dinyahaktifkan' : daysRemaining <= 0 ? '⚠️ Tamat Tempoh' : `⏱️ Baki: ${daysRemaining} Hari`}
+                  {statusMode === 'on' ? (lang === 'en' ? '♾️ Active Forever' : '♾️ Aktif Selamanya') : statusMode === 'off' ? (lang === 'en' ? '🔒 Deactivated' : '🔒 Dinyahaktifkan') : daysRemaining <= 0 ? (lang === 'en' ? '⚠️ Expired' : '⚠️ Tamat Tempoh') : (lang === 'en' ? `⏱️ Remaining: ${daysRemaining} Days` : `⏱️ Baki: ${daysRemaining} Hari`)}
                 </span>
               )}
             </div>
@@ -281,21 +330,27 @@ export default function CoupleAdminPage() {
 
           <button 
             onClick={toggleTheme} 
-            className={`btn btn-sm ${styles.logoutBtn}`}
-            style={{ marginRight: '0.25rem' }}
-            title="Tukar Tema (Terang / Gelap)"
+            className={`btn btn-sm ${styles.accountBtn}`}
+            title={t.toggleThemeTooltip}
           >
             {theme === 'dark' ? t.lightMode : t.darkMode}
           </button>
-          <a href={inviteUrl} target="_blank" className={`btn btn-sm ${styles.logoutBtn}`} style={{ textDecoration: 'none', marginRight: '0.25rem', color: '#4ade80' }} title="Buka laman jemputan langsung di tab baru (simpan dahulu untuk lihat perubahan)">
-            🌐 Laman Langsung ↗
+          <button 
+            onClick={() => setShowPreview(!showPreview)} 
+            className={`btn btn-sm ${styles.accountBtn} ${showPreview ? styles.previewBtnActive : ''}`} 
+            title={t.togglePhonePreviewTooltip}
+          >
+            {showPreview ? '📱 Hide Preview' : '📱 Show Preview'}
+          </button>
+          <a href={inviteUrl} target="_blank" className={`btn btn-sm ${styles.logoutBtn}`} style={{ textDecoration: 'none', marginRight: '0.25rem', color: '#4ade80' }} title={t.openLiveSiteTooltip}>
+            {t.liveSite}
           </a>
           {dirty && <button onClick={save} disabled={saving} className={`btn btn-primary btn-sm ${styles.saveBtn}`}>{saving ? t.saving : `💾 ${t.saveChanges}`}</button>}
           <button onClick={handleLogout} className={`btn btn-sm ${styles.logoutBtn}`}>{t.logout}</button>
         </div>
       </header>
 
-      <div className={styles.body}>
+      <div className={`${styles.body} ${showPreview ? styles.bodyWithPreview : ''}`}>
         {/* Sidebar Tabs */}
         <nav className={styles.sidebar}>
           {TABS.map(t => (
@@ -325,6 +380,13 @@ export default function CoupleAdminPage() {
             </Section>
           )}
 
+          {/* ── REKA BENTUK (Canva Builder) ── */}
+          {activeTab === 'reka' && (
+            <Section title={t.visualBuilderSection}>
+              <DesignBuilderTab config={config} update={update} lang={lang} t={t} onSave={save} />
+            </Section>
+          )}
+
           {/* ── SKRIN ── */}
           {/* ── LATAR BELAKANG ── */}
           {activeTab === 'latar' && (
@@ -351,6 +413,7 @@ export default function CoupleAdminPage() {
                       sectionKey="invitation"
                       currentUrl={config.unifiedBackgroundUrl || ''}
                       onChange={(url) => update({ unifiedBackgroundUrl: url })}
+                      t={t}
                     />
                   </div>
                 )}
@@ -372,6 +435,7 @@ export default function CoupleAdminPage() {
                         sectionKey={key as keyof WeddingConfig['backgrounds']}
                         currentUrl={config.backgrounds?.[key as keyof WeddingConfig['backgrounds']] || ''}
                         onChange={(url) => update({ backgrounds: { ...config.backgrounds, [key]: url } })}
+                        t={t}
                       />
                     ))}
                   </div>
@@ -381,22 +445,153 @@ export default function CoupleAdminPage() {
           )}
 
           {activeTab === 'skrin' && (
-            <Section title={t.sectionVisibility}>
-              <p className={styles.sectionHint}>{t.sectionVisibilityDesc}</p>
-              <div className={styles.toggleList}>
-                {Object.entries(config.sections).map(([key, val]) => (
-                  <div key={key} className={styles.toggleRow}>
+            <>
+              <Section title={t.sectionVisibility}>
+                <p className={styles.sectionHint}>{t.sectionVisibilityDesc}</p>
+                <div className={styles.toggleList}>
+                  {Object.entries(config.sections).map(([key, val]) => (
+                    <div key={key} className={styles.toggleRow}>
+                      <div>
+                        <div className={styles.toggleLabel}>{SECTION_LABELS[key] || key}</div>
+                      </div>
+                      <label className="toggle-switch">
+                        <input type="checkbox" checked={val} onChange={e => update({ sections: { ...config.sections, [key]: e.target.checked } })} />
+                        <span className="toggle-slider" />
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </Section>
+
+              {/* 🧭 Floating Navigation Bar Settings */}
+              <Section title={lang === 'en' ? '🧭 Floating Navigation Bar' : '🧭 Bar Navigasi Terapung'}>
+                <p className={styles.sectionHint}>
+                  {lang === 'en'
+                    ? 'Enable or disable the floating navigation bar at the bottom of the live website that contains menu items ("RSVP", "Calendar", "Contact", "Location", "Cash Gift", "Gift").'
+                    : 'Aktifkan atau nyahaktifkan bar navigasi terapung di bahagian bawah laman web live yang mengandungi menu "RSVP", "Kalendar", "Kenalan", "Lokasi", "Hadiah Wang", dan "Hadiah Hantaran".'}
+                </p>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  {/* Main Toggle */}
+                  <div className={styles.toggleRow} style={{ borderBottom: '1px solid var(--admin-border)', paddingBottom: '1rem' }}>
                     <div>
-                      <div className={styles.toggleLabel}>{SECTION_LABELS[key] || key}</div>
+                      <div className={styles.toggleLabel} style={{ fontSize: '0.95rem', fontWeight: 700, color: '#C9A84C' }}>
+                        {lang === 'en' ? 'Show Floating Navigation Bar on Live Website' : 'Paparkan Bar Navigasi Terapung pada Laman Web Live'}
+                      </div>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--admin-text-muted)', marginTop: '0.2rem' }}>
+                        {lang === 'en'
+                          ? 'When turned OFF, the entire floating bottom menu will be hidden on the live website.'
+                          : 'Apabila di-OFF, kesemua menu pintas di bahagian bawah laman web live akan disembunyikan sepenuhnya.'}
+                      </div>
                     </div>
                     <label className="toggle-switch">
-                      <input type="checkbox" checked={val} onChange={e => update({ sections: { ...config.sections, [key]: e.target.checked } })} />
+                      <input
+                        type="checkbox"
+                        checked={config.featureToggles?.enableFloatingNav !== false}
+                        onChange={e =>
+                          update({
+                            featureToggles: {
+                              ...(config.featureToggles || {}),
+                              enableFloatingNav: e.target.checked,
+                            },
+                          })
+                        }
+                      />
                       <span className="toggle-slider" />
                     </label>
                   </div>
-                ))}
-              </div>
-            </Section>
+
+                  {/* Individual Menu Item Toggles */}
+                  {config.featureToggles?.enableFloatingNav !== false && (
+                    <div>
+                      <h4 style={{ fontSize: '0.82rem', color: 'var(--admin-text)', fontWeight: 600, marginBottom: '0.75rem' }}>
+                        📌 {lang === 'en' ? 'Individual Navigation Menu Items' : 'Pilihan Menu Navigasi Individu'}
+                      </h4>
+                      <div className={styles.toggleList}>
+                        <div className={styles.toggleRow}>
+                          <div>
+                            <div className={styles.toggleLabel}>📩 RSVP</div>
+                          </div>
+                          <label className="toggle-switch">
+                            <input
+                              type="checkbox"
+                              checked={config.featureToggles?.enableRsvp !== false}
+                              onChange={e => update({ featureToggles: { ...(config.featureToggles || {}), enableRsvp: e.target.checked } })}
+                            />
+                            <span className="toggle-slider" />
+                          </label>
+                        </div>
+                        <div className={styles.toggleRow}>
+                          <div>
+                            <div className={styles.toggleLabel}>📅 {lang === 'en' ? 'Calendar' : 'Kalendar'}</div>
+                          </div>
+                          <label className="toggle-switch">
+                            <input
+                              type="checkbox"
+                              checked={config.featureToggles?.enableCalendar !== false}
+                              onChange={e => update({ featureToggles: { ...(config.featureToggles || {}), enableCalendar: e.target.checked } })}
+                            />
+                            <span className="toggle-slider" />
+                          </label>
+                        </div>
+                        <div className={styles.toggleRow}>
+                          <div>
+                            <div className={styles.toggleLabel}>📞 {lang === 'en' ? 'Contact' : 'Kenalan'}</div>
+                          </div>
+                          <label className="toggle-switch">
+                            <input
+                              type="checkbox"
+                              checked={config.featureToggles?.enableContact !== false}
+                              onChange={e => update({ featureToggles: { ...(config.featureToggles || {}), enableContact: e.target.checked } })}
+                            />
+                            <span className="toggle-slider" />
+                          </label>
+                        </div>
+                        <div className={styles.toggleRow}>
+                          <div>
+                            <div className={styles.toggleLabel}>📍 {lang === 'en' ? 'Location' : 'Lokasi'}</div>
+                          </div>
+                          <label className="toggle-switch">
+                            <input
+                              type="checkbox"
+                              checked={config.featureToggles?.enableLocation !== false}
+                              onChange={e => update({ featureToggles: { ...(config.featureToggles || {}), enableLocation: e.target.checked } })}
+                            />
+                            <span className="toggle-slider" />
+                          </label>
+                        </div>
+                        <div className={styles.toggleRow}>
+                          <div>
+                            <div className={styles.toggleLabel}>💵 {lang === 'en' ? 'Cash Gift' : 'Hadiah Wang (Salam Kaut)'}</div>
+                          </div>
+                          <label className="toggle-switch">
+                            <input
+                              type="checkbox"
+                              checked={config.featureToggles?.enableMoney !== false}
+                              onChange={e => update({ featureToggles: { ...(config.featureToggles || {}), enableMoney: e.target.checked } })}
+                            />
+                            <span className="toggle-slider" />
+                          </label>
+                        </div>
+                        <div className={styles.toggleRow}>
+                          <div>
+                            <div className={styles.toggleLabel}>🎁 {lang === 'en' ? 'Gift Registry' : 'Hadiah Hantaran (Wishlist)'}</div>
+                          </div>
+                          <label className="toggle-switch">
+                            <input
+                              type="checkbox"
+                              checked={config.featureToggles?.enableGift !== false}
+                              onChange={e => update({ featureToggles: { ...(config.featureToggles || {}), enableGift: e.target.checked } })}
+                            />
+                            <span className="toggle-slider" />
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </Section>
+            </>
           )}
           {/* ── TEKS (Text Overrides) ── */}
           {activeTab === 'teks' && (
@@ -634,21 +829,21 @@ export default function CoupleAdminPage() {
               <div className={styles.divider} />
               <h4 className={styles.subheading}>{lang === 'en' ? 'Gallery Photos (URLs)' : 'Foto Galeri (URL)'}</h4>
               <p className={styles.hint}>{lang === 'en' ? 'Enter photo URLs (Google Drive, Imgur, etc). One URL per line.' : 'Masukkan URL gambar (Google Drive, Imgur, dll). Satu URL setiap baris.'}</p>
-              <PhotoUrlManager photos={config.photos} onChange={photos => update({ photos })} />
+              <PhotoUrlManager t={t} photos={config.photos} onChange={photos => update({ photos })} />
             </Section>
           )}
 
           {/* ── ATURCARA ── */}
           {activeTab === 'aturcara' && (
             <Section title={t.programmeSection}>
-              <ProgrammeManager items={config.programme} onChange={p => update({ programme: p })} />
+              <ProgrammeManager t={t} items={config.programme} onChange={p => update({ programme: p })} />
             </Section>
           )}
 
           {/* ── KENALAN ── */}
           {activeTab === 'kenalan' && (
             <Section title={t.contactSection}>
-              <ContactManager contacts={config.contacts} onChange={c => update({ contacts: c })} />
+              <ContactManager t={t} contacts={config.contacts} onChange={c => update({ contacts: c })} />
             </Section>
           )}
 
@@ -721,7 +916,21 @@ export default function CoupleAdminPage() {
           {/* ── HADIAH ── */}
           {activeTab === 'hadiah' && (
             <Section title="🎁 Senarai Hadiah">
-              <GiftManager gifts={config.gifts} onChange={g => update({ gifts: g })} />
+              <GiftManager t={t} gifts={config.gifts} onChange={g => update({ gifts: g })} />
+            </Section>
+          )}
+
+          {/* ── RSVP ── */}
+          {activeTab === 'rsvp' && (
+            <Section title={t.rsvpSection || '📨 Senarai RSVP'}>
+              <RsvpViewer t={t} rsvps={config.rsvps} wishes={config.wishes} coupleId={coupleId} onRefresh={fetchConfig} />
+            </Section>
+          )}
+
+          {/* ── UCAPAN (Wishes Record Manager) ── */}
+          {activeTab === 'ucapan' && (
+            <Section title={lang === 'en' ? '💌 Guest Wishes & Messages Record' : '💌 Urus & Rekod Ucapan Tetamu'}>
+              <WishesRecordManager t={t} wishes={config.wishes} onRefresh={fetchConfig} lang={lang} />
             </Section>
           )}
 
@@ -729,6 +938,8 @@ export default function CoupleAdminPage() {
           {activeTab === 'akaun' && (
             <Section title="⚙️ Maklumat Akaun & Langganan">
               <CoupleAccountTab
+                lang={lang}
+                t={t}
                 packageName={packageName}
                 expiresAt={expiresAt}
                 daysRemaining={daysRemaining}
@@ -745,17 +956,105 @@ export default function CoupleAdminPage() {
             )}
           </div>
         </main>
+
+        {/* ── iPhone 17 Pro Preview Panel ── */}
+        {showPreview && (
+          <aside className={styles.previewPanel}>
+            {/* Panel header */}
+            <div className={styles.previewHeader}>
+              <div className={styles.previewHeaderTitle}>
+                <span>📱</span>
+                <span>iPhone 17 Pro</span>
+                <span className={styles.previewHeaderBadge}>Live</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <button 
+                  onClick={() => setShowRecorderModal(true)}
+                  className={styles.phoneActionIconBtn}
+                  title={t.recordIphoneVideoTooltip}
+                >
+                  📹
+                </button>
+                <button 
+                  onClick={() => {
+                    setIframeLoading(true);
+                    setIframeKey(k => k + 1);
+                  }}
+                  className={styles.phoneActionIconBtn} 
+                  title={t.refreshPreviewTooltip}
+                >
+                  ↺
+                </button>
+              </div>
+            </div>
+
+            {/* Phone frame */}
+            <div className={styles.previewBody}>
+              <div className={styles.phoneFrame} ref={phoneFrameRef}>
+                {/* Hardware buttons */}
+                <div className={styles.phoneActionBtn} title="Action Button" />
+                <div className={styles.phoneVol1} title="Volume Up" />
+                <div className={styles.phoneVol2} title="Volume Down" />
+                <div className={styles.phonePower} title="Side Button" />
+                <div className={styles.phoneCameraBtn} title="Camera Control" />
+
+                {/* Phone body */}
+                <div className={styles.phoneOuter}>
+                  <div className={styles.phoneScreen}>
+                    {/* Dynamic Island */}
+                    <div className={styles.dynamicIsland} />
+
+                    {/* Screen reflection */}
+                    <div className={styles.phoneReflection} />
+
+                    {/* The actual iframe */}
+                    {loginId && (
+                      <iframe
+                        key={iframeKey}
+                        src={`/${loginId}`}
+                        className={styles.phoneIframe}
+                        style={{
+                          transform: `scale(${iframeScale})`,
+                          transformOrigin: 'top left',
+                          width: '390px',
+                          height: '844px',
+                          flexShrink: 0,
+                        }}
+                        onLoad={() => setIframeLoading(false)}
+                        title={t.invitePreviewTooltip}
+                        sandbox="allow-scripts allow-same-origin allow-forms"
+                      />
+                    )}
+                    {!loginId && (
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#555', fontSize: '0.8rem', padding: '1rem', textAlign: 'center' }}>
+                        Memuatkan pratonton...
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer hint */}
+            <div className={styles.previewHint}>
+              💾 Simpan perubahan dahulu untuk melihat perubahan.<br />
+              <span style={{ opacity: 0.7 }}>Tekan ↺ untuk muat semula pratonton.</span>
+            </div>
+          </aside>
+        )}
       </div>
+
 
       {/* Mandatory password change popup */}
       {mustChangePassword && (
         <div className="popup-overlay" style={{ zIndex: 10000, background: 'rgba(15, 17, 23, 0.94)' }}>
           <div style={{ background: '#1a1d27', border: '1px solid rgba(255,255,255,.12)', borderRadius: '20px', width: '100%', maxWidth: '440px', padding: '2rem', boxShadow: '0 24px 64px rgba(0,0,0,.6)', margin: '1rem', textAlign: 'left' }}>
-            <h3 style={{ color: '#C9A84C', fontSize: '1.25rem', marginBottom: '0.5rem', fontWeight: 800 }}>🔐 Wajib Tukar Kata Laluan Semasa</h3>
+            <h3 style={{ color: '#C9A84C', fontSize: '1.25rem', marginBottom: '0.5rem', fontWeight: 800 }}>{t.mustChangePassTitle}</h3>
             <p style={{ color: 'var(--admin-text-muted)', fontSize: '0.85rem', marginBottom: '1.5rem', lineHeight: '1.6' }}>
               Bagi menjamin keselamatan laman web anda, sila tukar kata laluan sementara yang diberikan oleh pentadbir sebelum memulakan tetapan.
             </p>
             <CouplePasswordChangeForm
+              t={t}
               onSuccess={() => {
                 setMustChangePassword(false);
                 showToast('✅ Kata laluan anda berjaya ditukar! Anda boleh mula membuat tetapan.');
@@ -766,13 +1065,21 @@ export default function CoupleAdminPage() {
         </div>
       )}
 
+      {/* iPhone 17 Pro Video Recorder Modal */}
+      <IPhoneRecorderModal
+        loginId={loginId}
+        isOpen={showRecorderModal}
+        onClose={() => setShowRecorderModal(false)}
+        lang={lang}
+      />
+
       {toast && <div className={styles.toast}>{toast}</div>}
     </div>
   );
 }
 
-function CoupleAccountTab({ packageName, expiresAt, daysRemaining, statusMode }: {
-  packageName: string; expiresAt: string; daysRemaining: number | null; statusMode: string;
+function CoupleAccountTab({ packageName, expiresAt, daysRemaining, statusMode, lang, t }: {
+  packageName: string; expiresAt: string; daysRemaining: number | null; statusMode: string; lang: string; t: Record<string, string>;
 }) {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -811,31 +1118,31 @@ function CoupleAccountTab({ packageName, expiresAt, daysRemaining, statusMode }:
 
   // Calculate status mode class/text
   const isExpired = statusMode === 'off' || (statusMode === 'auto' && daysRemaining !== null && daysRemaining <= 0);
-  const statusText = statusMode === 'on' ? '♾️ Aktif Selamanya' : statusMode === 'off' ? '🔒 Dinyahaktifkan' : isExpired ? '⚠️ Tamat Tempoh' : '🟢 Aktif';
+  const statusText = statusMode === 'on' ? (lang === 'en' ? '♾️ Active Forever' : '♾️ Aktif Selamanya') : statusMode === 'off' ? (lang === 'en' ? '🔒 Deactivated' : '🔒 Dinyahaktifkan') : isExpired ? (lang === 'en' ? '⚠️ Expired' : '⚠️ Tamat Tempoh') : (lang === 'en' ? '✅ Active' : '✅ Aktif');
 
   return (
     <div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
         <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--admin-border)', borderRadius: '14px', padding: '1.25rem' }}>
-          <span style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Pakej Langganan</span>
+          <span style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t.pkgSubLabel}</span>
           <strong style={{ fontSize: '1.15rem', color: '#C9A84C', display: 'block', marginTop: '0.25rem' }}>{packageName || '30 Hari'}</strong>
         </div>
         <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--admin-border)', borderRadius: '14px', padding: '1.25rem' }}>
-          <span style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tarikh Tamat Tempoh</span>
+          <span style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t.expDateLabel}</span>
           <strong style={{ fontSize: '1.1rem', color: 'var(--admin-text)', display: 'block', marginTop: '0.25rem' }}>
-            {expiresAt ? new Date(expiresAt).toLocaleDateString('ms-MY', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'}
+            {expiresAt ? new Date(expiresAt).toLocaleDateString(lang === 'en' ? 'en-US' : 'ms-MY', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'}
           </strong>
         </div>
         <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--admin-border)', borderRadius: '14px', padding: '1.25rem' }}>
-          <span style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status Laman Web</span>
+          <span style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t.siteStatusLabel}</span>
           <strong style={{ fontSize: '1.1rem', color: isExpired ? '#ef4444' : '#4ade80', display: 'block', marginTop: '0.25rem' }}>
-            {statusText} {statusMode === 'auto' && daysRemaining !== null && daysRemaining > 0 && `(${daysRemaining} hari baki)`}
+            {statusText} {statusMode === 'auto' && daysRemaining !== null && daysRemaining > 0 && `(${daysRemaining} ${lang === 'en' ? 'days left' : 'hari baki'})`}
           </strong>
         </div>
       </div>
 
       <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--admin-border)', borderRadius: '16px', padding: '1.5rem', maxWidth: '480px', margin: '0 auto 0 0', textAlign: 'left' }}>
-        <h3 style={{ fontSize: '0.95rem', color: 'var(--admin-text)', marginBottom: '1.25rem', fontWeight: 700 }}>🔐 Tukar Kata Laluan Panel</h3>
+        <h3 style={{ fontSize: '0.95rem', color: 'var(--admin-text)', marginBottom: '1.25rem', fontWeight: 700 }}>{t.changePassPanel}</h3>
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div className="form-group">
             <label style={{ color: 'var(--admin-text-muted)' }}>Kata Laluan Semasa *</label>
@@ -851,7 +1158,7 @@ function CoupleAccountTab({ packageName, expiresAt, daysRemaining, statusMode }:
           </div>
 
           {error && <div style={{ color: '#e87c6f', fontSize: '0.85rem', background: 'rgba(192,57,43,.1)', padding: '0.65rem 0.9rem', borderRadius: '8px' }}>{error}</div>}
-          {success && <div style={{ color: '#4ade80', fontSize: '0.85rem', background: 'rgba(46,107,62,.15)', padding: '0.65rem 0.9rem', borderRadius: '8px' }}>✅ Kata laluan berjaya ditukar!</div>}
+          {success && <div style={{ color: '#4ade80', fontSize: '0.85rem', background: 'rgba(46,107,62,.15)', padding: '0.65rem 0.9rem', borderRadius: '8px' }}>{t.passChangedSuccess}</div>}
 
           <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '0.5rem' }} disabled={loading}>
             {loading ? 'Mengemaskini...' : '✓ Tukar Kata Laluan'}
@@ -862,7 +1169,7 @@ function CoupleAccountTab({ packageName, expiresAt, daysRemaining, statusMode }:
   );
 }
 
-function CouplePasswordChangeForm({ onSuccess }: { onSuccess: () => void }) {
+function CouplePasswordChangeForm({ onSuccess, t }: { onSuccess: () => void; t: Record<string, string>; }) {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -943,7 +1250,7 @@ function Field({ label, value, onChange, type, textarea, placeholder }: {
   );
 }
 
-function PhotoUrlManager({ photos, onChange }: { photos: string[]; onChange: (p: string[]) => void }) {
+function PhotoUrlManager({ photos, onChange, t }: { photos: string[]; onChange: (p: string[]) => void; t: Record<string, string>; }) {
   const [uploading, setUploading] = useState(false);
   const [rawText, setRawText] = useState(photos.join('\n'));
 
@@ -1021,7 +1328,7 @@ function PhotoUrlManager({ photos, onChange }: { photos: string[]; onChange: (p:
                   lineHeight: '18px',
                   padding: 0
                 }}
-                title="Padam Gambar"
+                title={t.deleteImageTooltip}
               >
                 ✕
               </button>
@@ -1033,7 +1340,7 @@ function PhotoUrlManager({ photos, onChange }: { photos: string[]; onChange: (p:
       {/* Upload button wrapper */}
       <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
         <label className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', margin: 0, padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
-          📁 Muat Naik Gambar Galeri
+          {t.uploadGalleryBtn}
           <input 
             type="file" 
             accept="image/*" 
@@ -1043,7 +1350,7 @@ function PhotoUrlManager({ photos, onChange }: { photos: string[]; onChange: (p:
             disabled={uploading} 
           />
         </label>
-        {uploading && <span style={{ fontSize: '0.85rem', color: '#4ade80' }}>⏳ Memuat naik...</span>}
+        {uploading && <span style={{ fontSize: '0.85rem', color: '#4ade80' }}>{t.uploading}</span>}
       </div>
 
       {/* Raw URLs input */}
@@ -1061,7 +1368,7 @@ function PhotoUrlManager({ photos, onChange }: { photos: string[]; onChange: (p:
   );
 }
 
-function ProgrammeManager({ items, onChange }: { items: ProgrammeItem[]; onChange: (p: ProgrammeItem[]) => void }) {
+function ProgrammeManager({ items, onChange, t }: { items: ProgrammeItem[]; onChange: (p: ProgrammeItem[]) => void; t: Record<string, string>; }) {
   function add() { onChange([...items, { time: '', event: '' }]); }
   function remove(i: number) { onChange(items.filter((_, idx) => idx !== i)); }
   function upd(i: number, field: keyof ProgrammeItem, val: string) {
@@ -1076,12 +1383,12 @@ function ProgrammeManager({ items, onChange }: { items: ProgrammeItem[]; onChang
           <button className="btn btn-danger btn-sm btn-icon" onClick={() => remove(i)}>✕</button>
         </div>
       ))}
-      <button className="btn btn-outline btn-sm" style={{ marginTop: '0.75rem' }} onClick={add}>＋ Tambah Aturcara</button>
+      <button className="btn btn-outline btn-sm" style={{ marginTop: '0.75rem' }} onClick={add}>{t.addProgBtn}</button>
     </div>
   );
 }
 
-function ContactManager({ contacts, onChange }: { contacts: Contact[]; onChange: (c: Contact[]) => void }) {
+function ContactManager({ contacts, onChange, t }: { contacts: Contact[]; onChange: (c: Contact[]) => void; t: Record<string, string>; }) {
   function add() { onChange([...contacts, { name: '', phone: '' }]); }
   function remove(i: number) { onChange(contacts.filter((_, idx) => idx !== i)); }
   function upd(i: number, field: keyof Contact, val: string) {
@@ -1096,12 +1403,12 @@ function ContactManager({ contacts, onChange }: { contacts: Contact[]; onChange:
           <button className="btn btn-danger btn-sm btn-icon" onClick={() => remove(i)}>✕</button>
         </div>
       ))}
-      <button className="btn btn-outline btn-sm" style={{ marginTop: '0.75rem' }} onClick={add}>＋ Tambah Kenalan</button>
+      <button className="btn btn-outline btn-sm" style={{ marginTop: '0.75rem' }} onClick={add}>{t.addContactBtn}</button>
     </div>
   );
 }
 
-function GiftManager({ gifts, onChange }: { gifts: Gift[]; onChange: (g: Gift[]) => void }) {
+function GiftManager({ gifts, onChange, t }: { gifts: Gift[]; onChange: (g: Gift[]) => void; t: Record<string, string>; }) {
   function add() { onChange([...gifts, { id: uuidv4(), item: '', link: '', imageUrl: '' }]); }
   function remove(id: string) { onChange(gifts.filter(g => g.id !== id)); }
   function upd(id: string, field: keyof Gift, val: string) {
@@ -1111,6 +1418,7 @@ function GiftManager({ gifts, onChange }: { gifts: Gift[]; onChange: (g: Gift[])
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
       {gifts.map((g, idx) => (
         <GiftItemCard
+          t={t}
           key={g.id}
           gift={g}
           index={idx}
@@ -1118,16 +1426,17 @@ function GiftManager({ gifts, onChange }: { gifts: Gift[]; onChange: (g: Gift[])
           onRemove={() => remove(g.id)}
         />
       ))}
-      <button className="btn btn-outline btn-sm" style={{ alignSelf: 'flex-start', marginTop: '0.5rem' }} onClick={add}>＋ Tambah Hadiah Baru</button>
+      <button className="btn btn-outline btn-sm" style={{ alignSelf: 'flex-start', marginTop: '0.5rem' }} onClick={add}>{t.addGiftBtn}</button>
     </div>
   );
 }
 
-function GiftItemCard({ gift, index, onUpdate, onRemove }: {
+function GiftItemCard({ gift, index, onUpdate, onRemove, t }: {
   gift: Gift;
   index: number;
   onUpdate: (field: keyof Gift, val: string) => void;
   onRemove: () => void;
+  t: Record<string, string>;
 }) {
   const [uploading, setUploading] = useState(false);
   const [scrapeStatus, setScrapeStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -1267,7 +1576,7 @@ function GiftItemCard({ gift, index, onUpdate, onRemove }: {
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h5 style={{ margin: 0, color: '#C9A84C', fontSize: '0.85rem', fontWeight: 700 }}>Hadiah #{index + 1}</h5>
-        <button type="button" className="btn btn-sm btn-danger" style={{ padding: '0.2rem 0.5rem', fontSize: '0.7rem' }} onClick={onRemove}>✕ Padam</button>
+        <button type="button" className="btn btn-sm btn-danger" style={{ padding: '0.2rem 0.5rem', fontSize: '0.7rem' }} onClick={onRemove}>{t.deleteBtn}</button>
       </div>
 
       {/* Name input (Full Width) */}
@@ -1316,7 +1625,7 @@ function GiftItemCard({ gift, index, onUpdate, onRemove }: {
                   type="button"
                   style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: '0.85rem' }}
                   onClick={() => setShowSettings(!showSettings)}
-                  title="Konfigurasi Carian Gambar"
+                  title={t.configImageSearchTooltip}
                 >
                   ⚙️
                 </button>
@@ -1376,7 +1685,7 @@ function GiftItemCard({ gift, index, onUpdate, onRemove }: {
                   type="button"
                   style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: '0.85rem' }}
                   onClick={() => setShowPriceSettings(!showPriceSettings)}
-                  title="Konfigurasi Carian Harga"
+                  title={t.configPriceSearchTooltip}
                 >
                   ⚙️
                 </button>
@@ -1435,7 +1744,7 @@ function GiftItemCard({ gift, index, onUpdate, onRemove }: {
   );
 }
 
-function RsvpViewer({ rsvps, wishes, coupleId, onRefresh }: { rsvps: RSVP[]; wishes: Wish[]; coupleId: string; onRefresh: () => void }) {
+function RsvpViewer({ rsvps, wishes, coupleId, onRefresh, t }: { rsvps: RSVP[]; wishes: Wish[]; coupleId: string; onRefresh: () => void; t: Record<string, string>; }) {
   const [tab, setTab] = useState<'rsvp' | 'wish'>('rsvp');
   const yes = rsvps.filter(r => r.attending === 'yes');
   const no = rsvps.filter(r => r.attending === 'no');
@@ -1444,20 +1753,20 @@ function RsvpViewer({ rsvps, wishes, coupleId, onRefresh }: { rsvps: RSVP[]; wis
   return (
     <div>
       <div className={styles.rsvpStats}>
-        <div className={styles.rsvpStat}><span>{rsvps.length}</span><label>Jumlah RSVP</label></div>
-        <div className={styles.rsvpStat}><span style={{ color: '#4ade80' }}>{yes.length}</span><label>Hadir</label></div>
-        <div className={styles.rsvpStat}><span style={{ color: '#f87171' }}>{no.length}</span><label>Tidak Hadir</label></div>
-        <div className={styles.rsvpStat}><span style={{ color: '#C9A84C' }}>{totalPax}</span><label>Jangkaan Tetamu</label></div>
-        <div className={styles.rsvpStat}><span>{wishes.length}</span><label>Ucapan</label></div>
+        <div className={styles.rsvpStat}><span>{rsvps.length}</span><label>{t.totalRsvpLabel}</label></div>
+        <div className={styles.rsvpStat}><span style={{ color: '#4ade80' }}>{yes.length}</span><label>{t.attendLabel}</label></div>
+        <div className={styles.rsvpStat}><span style={{ color: '#f87171' }}>{no.length}</span><label>{t.notAttendLabel}</label></div>
+        <div className={styles.rsvpStat}><span style={{ color: '#C9A84C' }}>{totalPax}</span><label>{t.expectedGuestLabel}</label></div>
+        <div className={styles.rsvpStat}><span>{wishes.length}</span><label>{t.wishesLabel}</label></div>
       </div>
       <div className={styles.rsvpTabs}>
         <button className={`${styles.rsvpTab} ${tab === 'rsvp' ? styles.rsvpTabActive : ''}`} onClick={() => setTab('rsvp')}>RSVP ({rsvps.length})</button>
         <button className={`${styles.rsvpTab} ${tab === 'wish' ? styles.rsvpTabActive : ''}`} onClick={() => setTab('wish')}>Ucapan ({wishes.length})</button>
-        <button className={`btn btn-sm ${styles.refreshBtn}`} onClick={onRefresh}>🔄 Muat Semula</button>
+        <button className={`btn btn-sm ${styles.refreshBtn}`} onClick={onRefresh}>{t.refreshBtn}</button>
       </div>
       {tab === 'rsvp' && (
         <div className={styles.rsvpList}>
-          {rsvps.length === 0 ? <p className={styles.hint}>Tiada RSVP lagi.</p> : rsvps.map(r => (
+          {rsvps.length === 0 ? <p className={styles.hint}>{t.noRsvpYet}</p> : rsvps.map(r => (
             <div key={r.id} className={styles.rsvpCard}>
               <div className={styles.rsvpCardTop}>
                 <strong>{r.name}</strong>
@@ -1475,9 +1784,12 @@ function RsvpViewer({ rsvps, wishes, coupleId, onRefresh }: { rsvps: RSVP[]; wis
       )}
       {tab === 'wish' && (
         <div className={styles.rsvpList}>
-          {wishes.length === 0 ? <p className={styles.hint}>Tiada ucapan lagi.</p> : wishes.map(w => (
+          {wishes.length === 0 ? <p className={styles.hint}>{t.noWishesYet}</p> : wishes.map(w => (
             <div key={w.id} className={styles.rsvpCard}>
-              <strong>{w.name}</strong>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <strong>{w.name}</strong>
+                {w.isHidden && <span style={{ fontSize: '0.68rem', background: 'rgba(239,68,68,0.2)', color: '#f87171', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>🙈 Disembunyikan</span>}
+              </div>
               <p className={styles.rsvpWish}>"{w.message}"</p>
               <span className={styles.rsvpDate}>{new Date(w.createdAt).toLocaleDateString('ms-MY')}</span>
             </div>
@@ -1488,11 +1800,291 @@ function RsvpViewer({ rsvps, wishes, coupleId, onRefresh }: { rsvps: RSVP[]; wis
   );
 }
 
-function BgImageRow({ label, sectionKey, currentUrl, onChange }: {
+function WishesRecordManager({ wishes, onRefresh, t, lang }: { wishes: Wish[]; onRefresh: () => void; t: Record<string, string>; lang: Lang; }) {
+  const [filter, setFilter] = useState<'all' | 'visible' | 'hidden'>('all');
+  const [editingWish, setEditingWish] = useState<Wish | null>(null);
+  const [isAddingWish, setIsAddingWish] = useState(false);
+  const [wishName, setWishName] = useState('');
+  const [wishMsg, setWishMsg] = useState('');
+  const [savingWish, setSavingWish] = useState(false);
+
+  const hiddenCount = wishes.filter(w => w.isHidden).length;
+  const visibleCount = wishes.length - hiddenCount;
+
+  const filteredWishes = wishes.filter(w => {
+    if (filter === 'visible') return !w.isHidden;
+    if (filter === 'hidden') return w.isHidden;
+    return true;
+  });
+
+  async function handleToggleHide(w: Wish) {
+    try {
+      const res = await fetch('/api/couple/wishes', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: w.id, isHidden: !w.isHidden }),
+      });
+      if (res.ok) {
+        onRefresh();
+      } else {
+        alert('Gagal mengemaskini status paparan ucapan');
+      }
+    } catch {
+      alert('Ralat sambungan');
+    }
+  }
+
+  async function handleCreateWish() {
+    if (!wishName.trim() || !wishMsg.trim()) return;
+    setSavingWish(true);
+    try {
+      const res = await fetch('/api/couple/wishes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: wishName, message: wishMsg }),
+      });
+      if (res.ok) {
+        setWishName('');
+        setWishMsg('');
+        setIsAddingWish(false);
+        onRefresh();
+      } else {
+        alert('Gagal menambah ucapan');
+      }
+    } finally {
+      setSavingWish(false);
+    }
+  }
+
+  async function handleUpdateWish() {
+    if (!editingWish || !wishName.trim() || !wishMsg.trim()) return;
+    setSavingWish(true);
+    try {
+      const res = await fetch('/api/couple/wishes', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: editingWish.id, name: wishName, message: wishMsg }),
+      });
+      if (res.ok) {
+        setEditingWish(null);
+        setWishName('');
+        setWishMsg('');
+        onRefresh();
+      } else {
+        alert('Gagal mengemaskini ucapan');
+      }
+    } finally {
+      setSavingWish(false);
+    }
+  }
+
+  async function handleDeleteWish(id: string) {
+    if (!window.confirm(t.confirmDeleteWish || 'Adakah anda pasti mahu memadam ucapan ini? (Boleh dipadam jika mengandungi mesej tidak bersesuaian)')) return;
+    try {
+      const res = await fetch(`/api/couple/wishes?id=${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        onRefresh();
+      } else {
+        alert('Gagal memadam ucapan');
+      }
+    } catch {
+      alert('Ralat memadam ucapan');
+    }
+  }
+
+  function startEdit(w: Wish) {
+    setEditingWish(w);
+    setWishName(w.name);
+    setWishMsg(w.message);
+    setIsAddingWish(false);
+  }
+
+  function startAdd() {
+    setEditingWish(null);
+    setWishName('');
+    setWishMsg('');
+    setIsAddingWish(true);
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+      <p style={{ color: 'var(--admin-text-muted)', fontSize: '0.84rem', lineHeight: 1.5, marginTop: '-0.5rem' }}>
+        {lang === 'en'
+          ? 'Manage wishes submitted by guests via "Send Wish". You can edit, delete, or hide inappropriate/malicious messages from appearing on the live website.'
+          : 'Urus ucapan dan doa restu yang dihantar oleh tetamu melalui "Hantar Ucapan". Anda boleh menyunting, memadam, atau menyembunyikan ucapan yang tidak bersesuaian daripada dipaparkan di kad jemputan live.'}
+      </p>
+
+      {/* Stats Bar */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', background: 'rgba(0,0,0,0.15)', padding: '0.85rem', borderRadius: '12px', border: '1px solid var(--admin-border)' }}>
+        <div style={{ textAlign: 'center' }}>
+          <span style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--admin-text)', display: 'block' }}>{wishes.length}</span>
+          <span style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{lang === 'en' ? 'Total Wishes' : 'Jumlah Ucapan'}</span>
+        </div>
+        <div style={{ textAlign: 'center' }}>
+          <span style={{ fontSize: '1.2rem', fontWeight: 800, color: '#4ade80', display: 'block' }}>{visibleCount}</span>
+          <span style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{lang === 'en' ? 'Visible Live' : 'Dipapar di Laman'}</span>
+        </div>
+        <div style={{ textAlign: 'center' }}>
+          <span style={{ fontSize: '1.2rem', fontWeight: 800, color: '#f87171', display: 'block' }}>{hiddenCount}</span>
+          <span style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{lang === 'en' ? 'Hidden Messages' : 'Disembunyikan'}</span>
+        </div>
+      </div>
+
+      {/* Filter Tabs & Add Button Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+        <div className={styles.rsvpTabs} style={{ margin: 0 }}>
+          <button className={`${styles.rsvpTab} ${filter === 'all' ? styles.rsvpTabActive : ''}`} onClick={() => setFilter('all')}>
+            {lang === 'en' ? 'All Wishes' : 'Semua Ucapan'} ({wishes.length})
+          </button>
+          <button className={`${styles.rsvpTab} ${filter === 'visible' ? styles.rsvpTabActive : ''}`} onClick={() => setFilter('visible')}>
+            {lang === 'en' ? 'Visible' : 'Dipapar'} ({visibleCount})
+          </button>
+          <button className={`${styles.rsvpTab} ${filter === 'hidden' ? styles.rsvpTabActive : ''}`} onClick={() => setFilter('hidden')}>
+            {lang === 'en' ? 'Hidden' : 'Disembunyi'} ({hiddenCount})
+          </button>
+        </div>
+        <button className="btn btn-primary btn-sm" style={{ padding: '0.4rem 0.85rem' }} onClick={startAdd}>
+          {t.addWishBtn || '＋ Tambah Ucapan Manual'}
+        </button>
+      </div>
+
+      {/* Wish Form (Add / Edit) */}
+      {(isAddingWish || editingWish) && (
+        <div style={{ background: 'rgba(201,168,76,0.08)', border: '1px solid var(--admin-border)', borderRadius: '12px', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <h5 style={{ margin: 0, color: '#C9A84C', fontSize: '0.88rem', fontWeight: 700 }}>
+            {editingWish ? (t.editWishTitle || '✏️ Kemaskini Ucapan Tetamu') : (t.addWishTitle || '＋ Tambah Ucapan Manual')}
+          </h5>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+            <label style={{ fontSize: '0.74rem', color: 'var(--admin-text-muted)' }}>{t.guestNameLabel || 'Nama Tetamu'} *</label>
+            <input
+              className="form-control"
+              placeholder="cth: Ahmad Shah"
+              value={wishName}
+              onChange={e => setWishName(e.target.value)}
+            />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+            <label style={{ fontSize: '0.74rem', color: 'var(--admin-text-muted)' }}>{t.wishMsgLabel || 'Ucapan & Doa Restu'} *</label>
+            <textarea
+              className="form-control"
+              rows={3}
+              placeholder="cth: Selamat pengantin baru, semoga kekal hingga ke anak cucu!"
+              value={wishMsg}
+              onChange={e => setWishMsg(e.target.value)}
+            />
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => { setIsAddingWish(false); setEditingWish(null); }}
+              disabled={savingWish}
+            >
+              Batal
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              onClick={editingWish ? handleUpdateWish : handleCreateWish}
+              disabled={savingWish || !wishName.trim() || !wishMsg.trim()}
+            >
+              {savingWish ? 'Menyimpan...' : 'Simpan Ucapan'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {filteredWishes.length === 0 ? (
+        <div style={{ padding: '2rem', textAlign: 'center', background: 'var(--admin-stat-bg)', borderRadius: '12px', color: 'var(--admin-text-muted)', fontSize: '0.85rem' }}>
+          💌 {filter === 'hidden' ? 'Tiada ucapan yang disembunyikan.' : filter === 'visible' ? 'Tiada ucapan dipaparkan.' : 'Tiada rekod ucapan lagi.'}
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          {filteredWishes.map(w => (
+            <div
+              key={w.id}
+              style={{
+                background: w.isHidden ? 'rgba(239,68,68,0.06)' : 'rgba(255,255,255,0.03)',
+                border: `1px solid ${w.isHidden ? 'rgba(239,68,68,0.25)' : 'var(--admin-border)'}`,
+                borderRadius: '12px',
+                padding: '1rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.5rem'
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <strong style={{ fontSize: '0.92rem', color: '#C9A84C' }}>{w.name}</strong>
+                  <span style={{
+                    fontSize: '0.68rem',
+                    padding: '2px 8px',
+                    borderRadius: '10px',
+                    fontWeight: 700,
+                    background: w.isHidden ? 'rgba(239,68,68,0.18)' : 'rgba(74,222,128,0.18)',
+                    color: w.isHidden ? '#f87171' : '#4ade80',
+                    border: `1px solid ${w.isHidden ? 'rgba(239,68,68,0.3)' : 'rgba(74,222,128,0.3)'}`
+                  }}>
+                    {w.isHidden ? '🙈 Disembunyikan dari Live Site' : '✓ Dipapar di Live Site'}
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <button
+                    type="button"
+                    className="btn btn-sm"
+                    style={{
+                      padding: '0.2rem 0.55rem',
+                      fontSize: '0.7rem',
+                      background: w.isHidden ? 'rgba(74,222,128,0.12)' : 'rgba(239,68,68,0.12)',
+                      color: w.isHidden ? '#4ade80' : '#f87171',
+                      border: `1px solid ${w.isHidden ? 'rgba(74,222,128,0.25)' : 'rgba(239,68,68,0.25)'}`
+                    }}
+                    onClick={() => handleToggleHide(w)}
+                    title={w.isHidden ? 'Tunjukkan ucapan di kad live' : 'Sembunyikan ucapan daripada dipaparkan di kad live'}
+                  >
+                    {w.isHidden ? '👁️ Paparkan di Laman' : '🙈 Sembunyikan'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-sm"
+                    style={{ padding: '0.2rem 0.5rem', fontSize: '0.7rem', background: 'rgba(255,255,255,0.06)', border: '1px solid var(--admin-border)', color: 'var(--admin-text)' }}
+                    onClick={() => startEdit(w)}
+                  >
+                    ✏️ Edit
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-danger"
+                    style={{ padding: '0.2rem 0.5rem', fontSize: '0.7rem' }}
+                    onClick={() => handleDeleteWish(w.id)}
+                  >
+                    🗑️ Padam
+                  </button>
+                </div>
+              </div>
+
+              <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--admin-text)', lineHeight: 1.5, fontStyle: 'italic' }}>
+                "{w.message}"
+              </p>
+
+              <span style={{ fontSize: '0.7rem', color: 'var(--admin-text-muted)', alignSelf: 'flex-end' }}>
+                🕐 {new Date(w.createdAt).toLocaleDateString('ms-MY')}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BgImageRow({ label, sectionKey, currentUrl, onChange, t }: {
   label: string;
   sectionKey: keyof WeddingConfig['backgrounds'];
   currentUrl: string;
   onChange: (url: string) => void;
+  t: Record<string, string>;
 }) {
   const [uploading, setUploading] = useState(false);
   const [tab, setTab] = useState<'upload' | 'url' | 'preset'>('upload');
@@ -1553,7 +2145,7 @@ function BgImageRow({ label, sectionKey, currentUrl, onChange }: {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
           {currentUrl && (
-            <button type="button" className="btn btn-sm btn-danger" style={{ padding: '0.3rem 0.6rem', fontSize: '0.7rem' }} onClick={() => { onChange(''); setExpanded(false); }} title="Pulihkan ke lalai tema">✕ Lalai</button>
+            <button type="button" className="btn btn-sm btn-danger" style={{ padding: '0.3rem 0.6rem', fontSize: '0.7rem' }} onClick={() => { onChange(''); setExpanded(false); }} title={t.restoreThemeDefaultTooltip}>{t.defaultDeleteBtn}</button>
           )}
           <button type="button" style={{ background: expanded ? 'rgba(201,168,76,.18)' : 'rgba(255,255,255,.06)', border: `1px solid ${expanded ? '#C9A84C' : 'rgba(255,255,255,.12)'}`, color: expanded ? '#C9A84C' : '#cbd5e1', borderRadius: '8px', padding: '0.3rem 0.7rem', fontSize: '0.72rem', cursor: 'pointer', fontFamily: 'inherit' }} onClick={() => setExpanded(v => !v)}>
             {expanded ? '▲ Tutup' : '🖼️ Tukar'}
@@ -1566,9 +2158,9 @@ function BgImageRow({ label, sectionKey, currentUrl, onChange }: {
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', padding: '1rem' }}>
           {/* Tab switcher */}
           <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.85rem' }}>
-            <button style={tabBtnStyle(tab === 'upload')} onClick={() => setTab('upload')}>📁 Muat Naik</button>
-            <button style={tabBtnStyle(tab === 'url')} onClick={() => setTab('url')}>🔗 URL</button>
-            <button style={tabBtnStyle(tab === 'preset')} onClick={() => setTab('preset')}>✨ Koleksi Tema</button>
+            <button style={tabBtnStyle(tab === 'upload')} onClick={() => setTab('upload')}>{t.uploadBtn}</button>
+            <button style={tabBtnStyle(tab === 'url')} onClick={() => setTab('url')}>{t.urlLabel}</button>
+            <button style={tabBtnStyle(tab === 'preset')} onClick={() => setTab('preset')}>{t.themeCollection}</button>
           </div>
 
           {/* Upload tab */}

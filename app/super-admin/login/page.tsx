@@ -58,7 +58,7 @@ export default function SuperAdminLogin() {
       if (data.firstTime) setFirstTime(true);
       router.push('/super-admin');
     } catch {
-      setError('Ralat sambungan. Cuba semula.');
+      setError(t.connError);
     } finally {
       setLoading(false);
     }
@@ -81,7 +81,7 @@ export default function SuperAdminLogin() {
             cursor: 'pointer',
             transition: 'all 0.2s'
           }}
-          title="Tukar Tema (Terang / Gelap)"
+          title={t.toggleThemeTooltip}
         >
           {theme === 'dark' ? t.lightMode : t.darkMode}
         </button>
@@ -96,7 +96,7 @@ export default function SuperAdminLogin() {
         <form onSubmit={handleSubmit} className={styles.form}>
           {firstTime && (
             <div className={styles.notice}>
-              ✅ Kata laluan telah ditetapkan. Anda telah log masuk.
+              {t.superAdminLoginSuccess}
             </div>
           )}
           <div className="form-group">
@@ -104,7 +104,7 @@ export default function SuperAdminLogin() {
             <input
               type="password"
               className="form-control"
-              placeholder="Masukkan kata laluan..."
+              placeholder={t.enterPassword}
               value={password}
               onChange={e => setPassword(e.target.value)}
               required
@@ -117,7 +117,7 @@ export default function SuperAdminLogin() {
             {loading ? t.loggingIn : t.loginBtn}
           </button>
           <p className={styles.hint}>
-            Kali pertama? Masukkan kata laluan pilihan anda untuk menetapkannya.
+            {t.superAdminLoginHint}
           </p>
         </form>
       </div>

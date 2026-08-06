@@ -12,12 +12,15 @@ const PLACEHOLDER_PHOTOS = [
   'https://images.unsplash.com/photo-1606800052052-a08af7148866?w=400&h=500&fit=crop',
 ];
 
+import { getElementStyle } from '@/lib/element-styles';
+
 interface Props { config: WeddingConfig; coupleId: string; style?: React.CSSProperties; lang?: Lang; textOverrides?: Record<string, string>; }
 
 export default function GalleryWishes({ config, coupleId, style, lang, textOverrides }: Props) {
   const currentLang: Lang = lang || config.language || 'ms';
   const t = getInvitationText(currentLang, textOverrides);
   const photos = config.photos?.length ? config.photos : PLACEHOLDER_PHOTOS;
+  const secStyle = config.pageStyles?.gallery;
   const [current, setCurrent] = useState(0);
   const [showWishForm, setShowWishForm] = useState(false);
   const [wishes, setWishes] = useState(config.wishes || []);
@@ -60,12 +63,13 @@ export default function GalleryWishes({ config, coupleId, style, lang, textOverr
       const res = await fetch(`/api/couple/rsvp?coupleId=${coupleId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'wish', name: wishName, wishes: wishMsg }),
+        body: JSON.stringify({ action: 'wish', name: wishName, message: wishMsg }),
       });
       if (res.ok) {
         setSubmitted(true);
-        setWishes(w => [{ id: String(Date.now()), name: wishName, message: wishMsg, createdAt: new Date().toISOString() }, ...w]);
-        setWishName(''); setWishMsg('');
+        setWishes(w => [...w, { id: String(Date.now()), name: wishName, message: wishMsg, createdAt: new Date().toISOString() }]);
+        setWishName('');
+        setWishMsg('');
         setTimeout(() => { setShowWishForm(false); setSubmitted(false); }, 2000);
       }
     } catch { /* silent */ }
@@ -95,13 +99,13 @@ export default function GalleryWishes({ config, coupleId, style, lang, textOverr
 
         {/* Wishes */}
         <div className={styles.wishesWrap}>
-          <p className={`font-script ${styles.wishTitle}`}>{t.wishesTitle}</p>
+          <p className={`font-script ${styles.wishTitle}`} style={getElementStyle(secStyle, 'galleryTitle', 'headingStyle')}>{t.wishesTitle}</p>
           <div className={styles.wishesList} ref={wishesListRef}>
-            {wishes.length === 0 ? (
-              <p className={styles.noWish}>{t.galleryNoWishes}</p>
+            {wishes.filter(w => !w.isHidden).length === 0 ? (
+              <p className={styles.noWish} style={getElementStyle(secStyle, 'galleryText', 'bodyStyle')}>{t.galleryNoWishes}</p>
             ) : (
-              wishes.slice().reverse().map(w => (
-                <div key={w.id} className={styles.wishCard}>
+              wishes.filter(w => !w.isHidden).slice().reverse().map(w => (
+                <div key={w.id} className={styles.wishCard} style={getElementStyle(secStyle, 'galleryWishCard', 'bodyStyle')}>
                   <div className={styles.wishAvatar}>{w.name.charAt(0).toUpperCase()}</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
                     <p className={styles.wishName}>{w.name}</p>
@@ -111,7 +115,7 @@ export default function GalleryWishes({ config, coupleId, style, lang, textOverr
               ))
             )}
           </div>
-          <button className={`btn btn-primary ${styles.wishBtn}`} onClick={() => setShowWishForm(true)}>
+          <button className={`btn btn-primary ${styles.wishBtn}`} onClick={() => setShowWishForm(true)} style={getElementStyle(secStyle, 'galleryWishBtn', 'headingStyle')}>
             💌 {t.sendWish}
           </button>
         </div>

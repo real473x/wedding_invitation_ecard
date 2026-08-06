@@ -48,12 +48,12 @@ export default function ContactPopup({ config, onClose, lang, textOverrides }: P
                 <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
                   <a href={`https://wa.me/6${c.phone.replace(/^0/, '').replace(/\D/g, '')}`} target="_blank" rel="noreferrer"
                     className="btn btn-sm" style={{ background: '#25D366', color: '#fff', padding: '0.45rem 0.7rem' }}
-                    title="WhatsApp">
+                    title={t.whatsapp}>
                     <WaIcon />
                   </a>
                   <a href={`tel:+6${c.phone.replace(/^0/, '').replace(/\D/g, '')}`}
                     className="btn btn-sm" style={{ background: 'var(--color-primary)', color: '#fff', padding: '0.45rem 0.7rem' }}
-                    title="Panggil">
+                    title={t.call}>
                     <PhoneIcon />
                   </a>
                 </div>

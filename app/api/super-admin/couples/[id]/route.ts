@@ -66,6 +66,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (body.expiresAt) {
     db.couples[idx].expiresAt = body.expiresAt;
   }
+  if (body.featureToggles) {
+    db.couples[idx].featureToggles = body.featureToggles;
+    if (db.couples[idx].config) {
+      db.couples[idx].config.featureToggles = body.featureToggles;
+    }
+  }
   if (body.resetPassword) {
     newPassword = generatePassword();
     db.couples[idx].passwordHash = await hashPassword(newPassword);

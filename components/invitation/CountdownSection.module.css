@@ -54,22 +54,22 @@
 
 @media (max-width: 600px) {
   .container { gap: 1rem; }
-  .sectionLabel { font-size: 1.8rem !important; }
+  .sectionLabel { font-size: 1.8rem; }
   .calCard { width: clamp(130px, 40vw, 170px) !important; }
   .calHeader { padding: 0.45rem; font-size: 0.75rem; }
   .calBody { padding: 0.6rem; }
-  .calDay { font-size: clamp(2rem, 9vw, 3rem) !important; }
-  .calMonth { font-size: 0.75rem !important; }
+  .calDay { font-size: clamp(2rem, 9vw, 3rem); }
+  .calMonth { font-size: 0.75rem; }
   .countdown { gap: 0.5rem; }
   .num {
     width: clamp(46px, 12vw, 60px) !important;
     height: clamp(46px, 12vw, 60px) !important;
-    font-size: clamp(1.1rem, 4.5vw, 1.5rem) !important;
+    font-size: clamp(1.1rem, 4.5vw, 1.5rem);
   }
-  .label { font-size: 0.6rem !important; }
+  .label { font-size: 0.6rem; }
   .details { padding: 0.85rem 1rem !important; gap: 0.65rem !important; }
-  .detailIcon { font-size: 1rem !important; }
-  .detailLabel { font-size: 0.68rem !important; }
-  .detailValue { font-size: 0.9rem !important; }
-  .detailSub { font-size: 0.75rem !important; }
+  .detailIcon { font-size: 1rem; }
+  .detailLabel { font-size: 0.68rem; }
+  .detailValue { font-size: 0.9rem; }
+  .detailSub { font-size: 0.75rem; }
 }

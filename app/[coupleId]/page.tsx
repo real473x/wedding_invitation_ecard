@@ -12,6 +12,8 @@ import CoupleMessage from '@/components/invitation/CoupleMessage';
 import ClosingScreen from '@/components/invitation/ClosingScreen';
 import FloatingNav from '@/components/nav/FloatingNav';
 import FallingParticles from '@/components/invitation/FallingParticles';
+import SectionFrame from '@/components/invitation/SectionFrame';
+import { buildGoogleFontsUrl } from '@/lib/typography';
 import { Lang } from '@/lib/i18n';
 
 export default function InvitationPage({ params }: { params: Promise<{ coupleId: string }> }) {
@@ -146,7 +148,7 @@ export default function InvitationPage({ params }: { params: Promise<{ coupleId:
       .catch(() => setStatus('notfound'));
   }, [coupleId]);
 
-  // Apply theme
+  // Apply theme and custom fonts
   useEffect(() => {
     if (!config) return;
     const theme = THEMES.find(t => t.key === config.theme) || THEMES[0];
@@ -154,11 +156,31 @@ export default function InvitationPage({ params }: { params: Promise<{ coupleId:
     // Load Google Fonts
     const existing = document.getElementById('gfonts');
     if (existing) existing.remove();
+    
+    // Collect custom section fonts if any
+    const customFonts: string[] = [];
+    if (config.pageStyles) {
+      Object.values(config.pageStyles).forEach(st => {
+        if (st?.headingStyle?.fontFamily) customFonts.push(st.headingStyle.fontFamily);
+        if (st?.bodyStyle?.fontFamily) customFonts.push(st.bodyStyle.fontFamily);
+        if (st?.accentStyle?.fontFamily) customFonts.push(st.accentStyle.fontFamily);
+        if (st?.elements) {
+          Object.values(st.elements).forEach((el: any) => {
+            if (el?.fontFamily) customFonts.push(el.fontFamily);
+          });
+        }
+      });
+    }
+
+    const themeFontUrl = `https://fonts.googleapis.com/css2?family=${theme.googleFonts}&display=swap`;
+    const customFontUrl = buildGoogleFontsUrl(customFonts);
+
     const link = document.createElement('link');
     link.id = 'gfonts';
     link.rel = 'stylesheet';
-    link.href = `https://fonts.googleapis.com/css2?family=${theme.googleFonts}&display=swap`;
+    link.href = customFontUrl ? `${themeFontUrl}&family=${customFonts.map(f => f.replace(/\s+/g, '+')).join('&family=')}` : themeFontUrl;
     document.head.appendChild(link);
+    
     // Update page title
     document.title = `Jemputan Perkahwinan — ${config.groomName} & ${config.brideName}`;
   }, [config]);
@@ -166,18 +188,22 @@ export default function InvitationPage({ params }: { params: Promise<{ coupleId:
   const handleGateOpen = useCallback(() => {
     // Step 1: doors open
     setGateOpen(true);
+    window.postMessage({ type: 'GATE_OPENED' }, '*');
     // Step 2: after doors open (900ms), start closing fade-out
     setTimeout(() => {
       setGateClosing(true);
       setShowNav(true);
-      // Step 3: after fade-out completes (550ms), unmount gate completely
+      window.postMessage({ type: 'GATE_OPENED' }, '*');
+      // Step 3: after fade-out completes (580ms), unmount gate completely
       setTimeout(() => {
         setGateUnmounted(true);
+        window.postMessage({ type: 'GATE_OPENED' }, '*');
       }, 580);
     }, 900);
   }, []);
 
-  const sections = config?.sections || {
+  const ft = config?.featureToggles || {};
+  const baseSections = config?.sections || {
     gate: true,
     invitation: true,
     parents: true,
@@ -186,6 +212,17 @@ export default function InvitationPage({ params }: { params: Promise<{ coupleId:
     gallery: true,
     message: true,
     closing: true,
+  };
+
+  const sections = {
+    gate: baseSections.gate && ft.enableGateSection !== false,
+    invitation: baseSections.invitation && ft.enableHeroSection !== false,
+    parents: baseSections.parents && ft.enableParentsSection !== false,
+    countdown: baseSections.countdown && ft.enableCountdownSection !== false,
+    programme: baseSections.programme && ft.enableProgramme !== false && ft.enableProgrammeSection !== false,
+    gallery: baseSections.gallery && ft.enableGallery !== false && ft.enableGallerySection !== false,
+    message: baseSections.message && ft.enableMessageSection !== false,
+    closing: baseSections.closing && ft.enableClosingSection !== false,
   };
 
   useEffect(() => {
@@ -203,6 +240,47 @@ export default function InvitationPage({ params }: { params: Promise<{ coupleId:
     targets.forEach(t => observer.observe(t));
     return () => observer.disconnect();
   }, [config, gateUnmounted, status, sections]);
+
+  useEffect(() => {
+    function handlePreviewMsg(e: MessageEvent) {
+      if (!e.data || typeof e.data !== 'object') return;
+      
+      if (e.data.type === 'OPEN_GATE') {
+        handleGateOpen();
+      } else if (e.data.type === 'PREVIEW_SELECT_SECTION') {
+        if (e.data.sectionId && e.data.sectionId !== 'gate') {
+          if (!gateOpen) {
+            handleGateOpen();
+          } else {
+            setGateOpen(true);
+            setGateClosing(true);
+            setGateUnmounted(true);
+            setShowNav(true);
+          }
+        }
+        if (e.data.sectionId) {
+          const el = document.getElementById(e.data.sectionId);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }
+      } else if (e.data.type === 'PREVIEW_HOVER_STYLE') {
+        if (e.data.sectionId && e.data.sectionId !== 'gate') {
+          // Ensure gate is open so inner section is visible
+          setGateOpen(true);
+          setGateClosing(true);
+          setGateUnmounted(true);
+          setShowNav(true);
+        }
+      } else if (e.data.type === 'PREVIEW_UPDATE_CONFIG') {
+        if (e.data.config) {
+          setConfig(e.data.config);
+        }
+      }
+    }
+    window.addEventListener('message', handlePreviewMsg);
+    return () => window.removeEventListener('message', handlePreviewMsg);
+  }, [handleGateOpen, gateOpen]);
 
   function getSectionStyle(sectionKey: 'gate' | 'invitation' | 'parents' | 'countdown' | 'programme' | 'gallery' | 'message' | 'closing') {
     if (!config) return {};
@@ -281,39 +359,39 @@ export default function InvitationPage({ params }: { params: Promise<{ coupleId:
       {/* Inner invitation content is mounted unconditionally so it pre-loads underneath the gate */}
       <>
         {sections.invitation && (
-          <div id="invitation" className="section-scroll-target" style={{ scrollSnapAlign: 'start' }}>
+          <SectionFrame id="invitation" sectionKey="invitation" sectionStyle={config.pageStyles?.invitation}>
             <InvitationHero config={config} style={getSectionStyle('invitation')} lang={siteLang} textOverrides={config.textOverrides} />
-          </div>
+          </SectionFrame>
         )}
         {sections.parents && (
-          <div id="parents" className="section-scroll-target" style={{ scrollSnapAlign: 'start' }}>
+          <SectionFrame id="parents" sectionKey="parents" sectionStyle={config.pageStyles?.parents}>
             <ParentsSection config={config} style={getSectionStyle('parents')} lang={siteLang} textOverrides={config.textOverrides} />
-          </div>
+          </SectionFrame>
         )}
         {sections.countdown && (
-          <div id="countdown" className="section-scroll-target" style={{ scrollSnapAlign: 'start' }}>
+          <SectionFrame id="countdown" sectionKey="countdown" sectionStyle={config.pageStyles?.countdown}>
             <CountdownSection config={config} style={getSectionStyle('countdown')} lang={siteLang} textOverrides={config.textOverrides} />
-          </div>
+          </SectionFrame>
         )}
         {sections.programme && (
-          <div id="programme" className="section-scroll-target" style={{ scrollSnapAlign: 'start' }}>
+          <SectionFrame id="programme" sectionKey="programme" sectionStyle={config.pageStyles?.programme}>
             <ProgrammeSection config={config} style={getSectionStyle('programme')} lang={siteLang} textOverrides={config.textOverrides} />
-          </div>
+          </SectionFrame>
         )}
         {sections.gallery && (
-          <div id="gallery" className="section-scroll-target" style={{ scrollSnapAlign: 'start' }}>
+          <SectionFrame id="gallery" sectionKey="gallery" sectionStyle={config.pageStyles?.gallery}>
             <GalleryWishes config={config} coupleId={dbId} style={getSectionStyle('gallery')} lang={siteLang} textOverrides={config.textOverrides} />
-          </div>
+          </SectionFrame>
         )}
         {sections.message && (
-          <div id="message" className="section-scroll-target" style={{ scrollSnapAlign: 'start' }}>
+          <SectionFrame id="message" sectionKey="message" sectionStyle={config.pageStyles?.message}>
             <CoupleMessage config={config} style={getSectionStyle('message')} lang={siteLang} textOverrides={config.textOverrides} />
-          </div>
+          </SectionFrame>
         )}
         {sections.closing && (
-          <div id="closing" className="section-scroll-target" style={{ scrollSnapAlign: 'start' }}>
+          <SectionFrame id="closing" sectionKey="closing" sectionStyle={config.pageStyles?.closing}>
             <ClosingScreen config={config} style={getSectionStyle('closing')} lang={siteLang} textOverrides={config.textOverrides} />
-          </div>
+          </SectionFrame>
         )}
 
         {/* ChatGPT-style Circular Vertical Dot Navigation — visible only after gate is dismissed */}

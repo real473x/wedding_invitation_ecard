@@ -27,6 +27,7 @@ export interface Wish {
   name: string;
   message: string;
   createdAt: string;
+  isHidden?: boolean;
 }
 
 export interface RSVP {
@@ -48,6 +49,102 @@ export interface SectionVisibility {
   gallery: boolean;
   message: boolean;
   closing: boolean;
+}
+
+export interface FeatureToggles {
+  // Feature Modules
+  enableFloatingNav?: boolean;
+  enableCalendar?: boolean;
+  enableRsvp?: boolean;
+  enableMoney?: boolean;
+  enableGift?: boolean;
+  enableGallery?: boolean;
+  enableProgramme?: boolean;
+  enableContact?: boolean;
+  enableLocation?: boolean;
+  enableDesignBuilder?: boolean;
+  enableMusic?: boolean;
+  enableTextOverrides?: boolean;
+  // Section Displays
+  enableGateSection?: boolean;
+  enableHeroSection?: boolean;
+  enableParentsSection?: boolean;
+  enableCountdownSection?: boolean;
+  enableProgrammeSection?: boolean;
+  enableGallerySection?: boolean;
+  enableMessageSection?: boolean;
+  enableClosingSection?: boolean;
+}
+
+export interface PageElementStyle {
+  fontFamily?: string;
+  fontSize?: string;
+  fontStyle?: 'normal' | 'italic';
+  fontWeight?: string;
+  textAlign?: 'left' | 'center' | 'right';
+  color?: string;
+  backgroundColor?: string;
+  borderColor?: string;
+  borderRadius?: string;
+  letterSpacing?: string;
+  lineHeight?: string;
+  marginTop?: string;
+  marginBottom?: string;
+  marginLeft?: string;
+  marginRight?: string;
+  paddingTop?: string;
+  paddingBottom?: string;
+  paddingLeft?: string;
+  paddingRight?: string;
+}
+
+export interface SectionStyle {
+  overlayOpacity?: number;       // 0–100 (controls how dark/light the BG overlay is)
+  overlayColor?: string;         // 'rgba(0,0,0,0.5)' or custom hex
+  borderStyle?: string;          // 'none' | 'single' | 'double' | 'ornate-gold' | 'floral' | 'corner-dots' | 'art-deco' | 'mandala-corner' | 'islamic' | 'bamboo'
+  borderColor?: string;
+  borderWidth?: number;
+  cornerDecor?: string;          // 'none' | 'floral' | 'star' | 'diamond' | 'mandala'
+  dividerStyle?: string;         // 'line' | 'ornate' | 'floral' | 'wave' | 'none'
+  cardBackground?: string;       // 'transparent' | 'surface' | 'frosted' | hex color
+  cardOpacity?: number;          // 0-100
+  transition?: string;           // transition animation key e.g. 'fade', 'slide-up'
+  headingStyle?: PageElementStyle;
+  bodyStyle?: PageElementStyle;
+  accentStyle?: PageElementStyle;
+  elements?: Record<string, PageElementStyle>;
+}
+
+export interface PageStyles {
+  gate?: SectionStyle;
+  invitation?: SectionStyle;
+  parents?: SectionStyle;
+  countdown?: SectionStyle;
+  programme?: SectionStyle;
+  gallery?: SectionStyle;
+  message?: SectionStyle;
+  closing?: SectionStyle;
+}
+
+export function getElementStyle(
+  sectionStyle?: SectionStyle,
+  elementKey?: string,
+  categoryFallback?: 'headingStyle' | 'bodyStyle' | 'accentStyle'
+): React.CSSProperties {
+  if (!sectionStyle) return {};
+  const elStyle = elementKey ? sectionStyle.elements?.[elementKey] : undefined;
+  const categoryStyle = categoryFallback ? sectionStyle[categoryFallback] : undefined;
+
+  const fontFamily = elStyle?.fontFamily || categoryStyle?.fontFamily;
+  const color = elStyle?.color || categoryStyle?.color;
+  const fontSize = elStyle?.fontSize || categoryStyle?.fontSize;
+
+  const styleObj: React.CSSProperties = {};
+  if (fontFamily) styleObj.fontFamily = `'${fontFamily}', sans-serif`;
+  if (color) styleObj.color = color;
+  if (fontSize) styleObj.fontSize = fontSize;
+
+  return styleObj;
 }
 
 export interface WeddingConfig {
@@ -104,6 +201,8 @@ export interface WeddingConfig {
   useUnifiedBackground?: boolean;
   unifiedBackgroundUrl?: string;
   textOverrides?: Record<string, string>;
+  pageStyles?: PageStyles;
+  featureToggles?: FeatureToggles;
 }
 
 export interface Couple {
@@ -118,6 +217,7 @@ export interface Couple {
   expiresAt?: string;       // ISO date string
   statusMode?: 'on' | 'off' | 'auto'; // 'on' = always active, 'off' = always inactive, 'auto' = active if not expired
   mustChangePassword?: boolean;
+  featureToggles?: FeatureToggles;
 }
 
 export interface Payment {
@@ -139,6 +239,7 @@ export interface Database {
   couples: Couple[];
   payments?: Payment[]; // new field for tracking accounting/payments
   globalTextOverrides?: Record<string, string>;
+  importedJsonBase?: Record<string, string>;
 }
 
 /** Helper to check if a couple page is active based on superadmin statusMode & expiration */
@@ -155,7 +256,7 @@ export function isCoupleActive(couple: Couple): boolean {
 
 const DEFAULT_CONFIG: WeddingConfig = {
   theme: 'malay',
-  language: 'ms',
+  language: 'en',
   backgrounds: {
     gate: '',
     invitation: '',

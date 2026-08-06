@@ -56,7 +56,7 @@ export default function CoupleAdminLogin() {
       const data = await res.json();
       if (!res.ok) { setError(data.error); return; }
       router.push('/admin');
-    } catch { setError('Ralat sambungan. Cuba semula.'); }
+    } catch { setError(t.connError); }
     finally { setLoading(false); }
   }
 
@@ -77,7 +77,7 @@ export default function CoupleAdminLogin() {
             cursor: 'pointer',
             transition: 'all 0.2s'
           }}
-          title="Tukar Tema (Terang / Gelap)"
+          title={t.toggleThemeTooltip}
         >
           {theme === 'dark' ? t.lightMode : t.darkMode}
         </button>
@@ -91,19 +91,19 @@ export default function CoupleAdminLogin() {
         </div>
         <form onSubmit={handleSubmit} className={styles.form}>
           <div className="form-group">
-            <label>Login ID</label>
-            <input type="text" className="form-control" placeholder="Masukkan Login ID anda..." value={loginId} onChange={e => setLoginId(e.target.value)} required autoFocus />
+            <label>{t.loginIdLabel}</label>
+            <input type="text" className="form-control" placeholder={t.enterLoginId} value={loginId} onChange={e => setLoginId(e.target.value)} required autoFocus />
           </div>
           <div className="form-group">
             <label>{t.password}</label>
-            <input type="password" className="form-control" placeholder="Masukkan kata laluan..." value={password} onChange={e => setPassword(e.target.value)} required />
+            <input type="password" className="form-control" placeholder={t.enterPassword} value={password} onChange={e => setPassword(e.target.value)} required />
           </div>
           {error && <div className={styles.error}>{error}</div>}
           <button type="submit" className={`btn btn-primary ${styles.submitBtn}`} disabled={loading}>
             {loading ? <span className={styles.spinner} /> : null}
             {loading ? t.loggingIn : t.loginBtn}
           </button>
-          <p className={styles.hint}>ID Login dan kata laluan diberikan oleh pentadbir.</p>
+          <p className={styles.hint}>{t.adminLoginHint}</p>
         </form>
       </div>
       <div className={styles.bg} />

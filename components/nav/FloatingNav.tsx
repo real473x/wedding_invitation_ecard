@@ -21,14 +21,17 @@ export default function FloatingNav({ config, coupleId, visible, onUpdateGifts, 
   const currentLang: Lang = lang || config.language || 'ms';
   const t = getInvitationText(currentLang, textOverrides);
 
+  const ft = config.featureToggles || {};
+  if (ft.enableFloatingNav === false) return null;
+
   const NAV_ITEMS = [
-    { key: 'rsvp',     icon: <RsvpIcon />,     label: t.navRsvp },
-    { key: 'calendar', icon: <CalIcon />,       label: t.navCalendar },
-    { key: 'contact',  icon: <PhoneIcon />,     label: t.navContact },
-    { key: 'location', icon: <PinIcon />,       label: t.navLocation },
-    { key: 'money',    icon: <MoneyIcon />,    label: t.navMoney },
-    { key: 'gift',     icon: <GiftIcon />,      label: t.navGift },
-  ] as const;
+    { key: 'rsvp',     icon: <RsvpIcon />,     label: t.navRsvp,     enabled: ft.enableRsvp !== false },
+    { key: 'calendar', icon: <CalIcon />,       label: t.navCalendar, enabled: ft.enableCalendar !== false },
+    { key: 'contact',  icon: <PhoneIcon />,     label: t.navContact,  enabled: ft.enableContact !== false },
+    { key: 'location', icon: <PinIcon />,       label: t.navLocation, enabled: ft.enableLocation !== false },
+    { key: 'money',    icon: <MoneyIcon />,    label: t.navMoney,    enabled: ft.enableMoney !== false },
+    { key: 'gift',     icon: <GiftIcon />,      label: t.navGift,     enabled: ft.enableGift !== false },
+  ].filter(i => i.enabled);
 
   function open(key: PopupKey) { setActive(key); }
   function close() { setActive(null); }

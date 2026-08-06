@@ -39,6 +39,7 @@ export async function GET() {
       daysRemaining,
       statusMode: c.statusMode ?? 'auto',
       mustChangePassword: c.mustChangePassword ?? false,
+      featureToggles: c.featureToggles || c.config.featureToggles || {},
     };
   });
   return NextResponse.json({ couples });
@@ -111,7 +112,7 @@ export async function POST(req: NextRequest) {
     sMode = 'on';
   } else if (packageKey === 'custom') {
     days = Number(customDays) || 30;
-    pName = `Kustom (${days} Hari)`;
+    pName = `Custom (${days} Days)`;
   }
   const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
 

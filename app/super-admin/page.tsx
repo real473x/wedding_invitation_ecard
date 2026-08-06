@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './dashboard.module.css';
 
-import { ADMIN_DICT, Lang, formatPackageName, getAdminText, ADMIN_TEXT_KEYS } from '@/lib/i18n';
+import { ADMIN_DICT, INVITATION_DICT, Lang, formatPackageName, getAdminText, ADMIN_TEXT_KEYS, AVAILABLE_PACKAGES } from '@/lib/i18n';
 
 interface CoupleRow {
   id: string;
@@ -21,6 +21,7 @@ interface CoupleRow {
   daysRemaining: number;
   statusMode: 'on' | 'off' | 'auto';
   mustChangePassword: boolean;
+  featureToggles?: Record<string, boolean>;
 }
 
 interface PaymentRow {
@@ -52,12 +53,16 @@ export default function SuperAdminDashboard() {
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [showCredModal, setShowCredModal] = useState<{ loginId: string; password: string; id: string } | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [editCouple, setEditCouple] = useState<CoupleRow | null>(null);
+  const [toggleCouple, setToggleCouple] = useState<CoupleRow | null>(null);
   const [search, setSearch] = useState('');
   const [toast, setToast] = useState('');
   const [theme, setTheme] = useState('dark');
-  const [lang, setLang] = useState<Lang>('ms');
+  const [lang, setLang] = useState<Lang>('en');
   
   const [globalTextOverrides, setGlobalTextOverrides] = useState<Record<string, string>>({});
+  const [importedJsonBase, setImportedJsonBase] = useState<Record<string, string>>({});
+  const [isImportedPending, setIsImportedPending] = useState(false);
   const [hasUnsavedGlobalText, setHasUnsavedGlobalText] = useState(false);
   const [savingGlobalText, setSavingGlobalText] = useState(false);
 
@@ -90,11 +95,61 @@ export default function SuperAdminDashboard() {
       if (res.ok) {
         const data = await res.json();
         setGlobalTextOverrides(data.globalTextOverrides || {});
+        setImportedJsonBase(data.importedJsonBase || {});
       }
     } catch (err) {
       console.error(err);
     }
   }, []);
+
+  function handleExportLang() {
+    const dataStr = JSON.stringify(globalTextOverrides, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `ewedding-lang-export-${Date.now()}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  function handleExportTemplate() {
+    const allDefaults = { ...INVITATION_DICT[lang], ...ADMIN_DICT[lang] };
+    const template = { ...allDefaults, ...globalTextOverrides };
+    const dataStr = JSON.stringify(template, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `ewedding-lang-template-${Date.now()}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  function handleImportLang(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const json = JSON.parse(event.target?.result as string);
+        if (typeof json === 'object' && json !== null) {
+          setGlobalTextOverrides(json);
+          setIsImportedPending(true);
+          setHasUnsavedGlobalText(true);
+          showToast(t.jsonImportPromptToast);
+        } else {
+          alert(t.jsonInvalidFormatToast);
+        }
+      } catch (err) {
+        alert(t.jsonReadErrorToast);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = ''; // Reset input
+  }
 
   useEffect(() => {
     fetchGlobalText();
@@ -103,20 +158,26 @@ export default function SuperAdminDashboard() {
   const saveGlobalText = async () => {
     setSavingGlobalText(true);
     try {
+      const nextBase = isImportedPending ? globalTextOverrides : importedJsonBase;
       const res = await fetch('/api/super-admin/config/global', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ globalTextOverrides }),
+        body: JSON.stringify({ 
+          globalTextOverrides,
+          importedJsonBase: nextBase
+        }),
       });
       if (res.ok) {
         setHasUnsavedGlobalText(false);
-        showToast('Global Text Overrides Saved!');
+        setImportedJsonBase(nextBase);
+        setIsImportedPending(false);
+        showToast(isImportedPending ? t.jsonImportSuccessToast : t.globalTextSavedToast);
       } else {
-        showToast('Failed to save overrides');
+        showToast(t.globalTextSaveErrorToast);
       }
     } catch (err) {
       console.error(err);
-      showToast('Error saving overrides');
+      showToast(t.globalTextSaveErrorToast);
     } finally {
       setSavingGlobalText(false);
     }
@@ -184,16 +245,21 @@ export default function SuperAdminDashboard() {
   }
 
   async function handleEditCouple(id: string) {
+    // Open the window BEFORE any await — browsers block popups after async breaks
+    const adminWindow = window.open('', '_blank');
     try {
       const res = await fetch(`/api/super-admin/couples/${id}/login`, {
         method: 'POST',
       });
       if (res.ok) {
-        window.open('/admin', '_blank');
+        if (adminWindow) adminWindow.location.href = '/admin';
+        else window.open('/admin', '_blank'); // fallback if opener was blocked
       } else {
+        adminWindow?.close();
         showToast('❌ Gagal mengakses editor.');
       }
     } catch {
+      adminWindow?.close();
       showToast('❌ Ralat sambungan.');
     }
   }
@@ -284,7 +350,7 @@ export default function SuperAdminDashboard() {
           <button 
             onClick={toggleTheme} 
             className={`btn btn-sm ${styles.accountBtn}`}
-            title={lang === 'en' ? "Toggle Theme (Light / Dark)" : "Tukar Tema (Terang / Gelap)"}
+            title={t.toggleThemeTooltip}
           >
             {theme === 'dark' ? t.lightMode : t.darkMode}
           </button>
@@ -307,7 +373,7 @@ export default function SuperAdminDashboard() {
             {t.accountingTab} (RM {totalRevenue.toFixed(2)})
           </button>
           <button className={`${styles.subTabBtn} ${subTab === 'text' ? styles.subTabActive : ''}`} onClick={() => { setSubTab('text'); }}>
-            {lang === 'en' ? '✏️ Global Text (Admin/Login)' : '✏️ Teks Global (Admin/Log Masuk)'}
+            {t.textTabLabel}
           </button>
         </div>
 
@@ -348,7 +414,7 @@ export default function SuperAdminDashboard() {
 
             {/* Table */}
             {loading ? (
-              <div className={styles.loading}><span className={styles.spinner} />{lang === 'en' ? 'Loading data...' : 'Memuatkan data...'}</div>
+              <div className={styles.loading}><span className={styles.spinner} />{t.loadingData}</div>
             ) : filteredCouples.length === 0 ? (
               <div className={styles.empty}>
                 <p>💍</p>
@@ -380,7 +446,7 @@ export default function SuperAdminDashboard() {
                           </td>
                           <td>
                             <code className={styles.loginId}>{c.loginId}</code>
-                            {c.mustChangePassword && <span style={{ display: 'block', fontSize: '0.62rem', color: '#f59e0b', marginTop: '3px', fontWeight: 600 }}>[{lang === 'en' ? 'Password Change Required' : 'Tukar Kata Laluan Wajib'}]</span>}
+                            {c.mustChangePassword && <span style={{ display: 'block', fontSize: '0.62rem', color: '#f59e0b', marginTop: '3px', fontWeight: 600 }}>[{t.mustChangePassBadge}]</span>}
                           </td>
                           <td><span className={styles.themeBadge}>{formatPackageName(c.packageName, lang)}</span></td>
                           <td>
@@ -390,7 +456,7 @@ export default function SuperAdminDashboard() {
                               {activeStatus === 'expired' && <span className={styles.expiryExpired}>{t.statusExpired}</span>}
                             </div>
                             <div className={styles.expiryInfo}>
-                              {new Date(c.expiresAt).toLocaleDateString(lang === 'en' ? 'en-US' : 'ms-MY', { day: 'numeric', month: 'short' })} ({c.daysRemaining} {t.daysLeft})
+                              {new Date(c.expiresAt).toLocaleDateString(t.dateLocale || (lang === 'en' ? 'en-US' : 'ms-MY'), { day: 'numeric', month: 'short' })} ({c.daysRemaining} {t.daysLeft})
                             </div>
                           </td>
                           <td><span className={styles.rsvpBadge}>{c.rsvpCount}</span></td>
@@ -399,21 +465,21 @@ export default function SuperAdminDashboard() {
                               <button
                                 className={`${styles.statusPill} ${c.statusMode === 'on' ? styles.statusPillActiveOn : ''}`}
                                 onClick={() => handleStatusModeChange(c.id, 'on')}
-                                title="Sentiasa Aktif (On)"
+                                title={t.statusOnTooltip}
                               >
                                 On
                               </button>
                               <button
                                 className={`${styles.statusPill} ${c.statusMode === 'off' ? styles.statusPillActiveOff : ''}`}
                                 onClick={() => handleStatusModeChange(c.id, 'off')}
-                                title="Sentiasa Tutup (Off)"
+                                title={t.statusOffTooltip}
                               >
                                 Off
                               </button>
                               <button
                                 className={`${styles.statusPill} ${c.statusMode === 'auto' ? styles.statusPillActiveAuto : ''}`}
                                 onClick={() => handleStatusModeChange(c.id, 'auto')}
-                                title="Auto Nyahaktif apabila tamat tempoh pakej"
+                                title={t.statusAutoTooltip}
                               >
                                 Auto
                               </button>
@@ -421,12 +487,14 @@ export default function SuperAdminDashboard() {
                           </td>
                           <td>
                             <div className={styles.actions}>
-                              <a href={c.loginId === 'demo' ? '/demo' : `/${c.loginId}`} target="_blank" className={`btn btn-sm ${styles.btnView}`} title="Lihat jemputan">👁</a>
-                              <button onClick={() => handleEditCouple(c.id)} className={`btn btn-sm ${styles.btnReset}`} style={{ color: '#4ade80', borderColor: 'rgba(74,222,128,.2)' }} title="Ubah Tetapan Laman Web">📝</button>
+                              <a href={c.loginId === 'demo' ? '/demo' : `/${c.loginId}`} target="_blank" className={`btn btn-sm ${styles.btnView}`} title={t.viewInviteTooltip}>👁️</a>
+                              <button onClick={() => setEditCouple(c)} className={`btn btn-sm ${styles.btnReset}`} style={{ color: '#fbbf24', borderColor: 'rgba(251,191,36,.2)' }} title={t.editPkgTooltip}>✏️</button>
+                              <button onClick={() => setToggleCouple(c)} className={`btn btn-sm ${styles.btnReset}`} style={{ color: '#a855f7', borderColor: 'rgba(168,85,247,.2)' }} title={t.featureTogglesModalTitle || '⚙️ Urus Ciri & Kebenaran Laman'}>⚙️</button>
+                              <button onClick={() => handleEditCouple(c.id)} className={`btn btn-sm ${styles.btnReset}`} style={{ color: '#4ade80', borderColor: 'rgba(74,222,128,.2)' }} title={t.editSiteTooltip}>📝</button>
                               {c.loginId !== 'demo' && (
                                 <>
-                                  <button onClick={() => setShowCredModal({ id: c.id, loginId: c.loginId, password: '' })} className={`btn btn-sm ${styles.btnReset}`} title="Papar Kelayakan Akses">🔑</button>
-                                  <button onClick={() => setDeleteConfirm(c.id)} className={`btn btn-sm btn-danger`} title="Padam">🗑</button>
+                                  <button onClick={() => setShowCredModal({ id: c.id, loginId: c.loginId, password: '' })} className={`btn btn-sm ${styles.btnReset}`} title={t.viewCredTooltip}>🔑</button>
+                                  <button onClick={() => setDeleteConfirm(c.id)} className={`btn btn-sm btn-danger`} title={t.deleteTooltip}>🗑</button>
                                 </>
                               )}
                             </div>
@@ -447,23 +515,23 @@ export default function SuperAdminDashboard() {
             <div className={styles.statsRow}>
               <div className={styles.stat}>
                 <span className={`${styles.statNum} ${styles.accountingTotal}`}>RM {totalRevenue.toFixed(2)}</span>
-                <span className={styles.statLabel}>Jumlah Pendapatan</span>
+                <span className={styles.statLabel}>{t.totalRevenueTitle}</span>
               </div>
               <div className={styles.stat}>
                 <span className={styles.statNum}>{payments.length}</span>
-                <span className={styles.statLabel}>Jumlah Transaksi Bayaran</span>
+                <span className={styles.statLabel}>{t.totalTransactionsTitle}</span>
               </div>
               <div className={styles.stat}>
                 <span className={styles.statNum}>
                   RM {payments.length ? (totalRevenue / payments.length).toFixed(2) : '0.00'}
                 </span>
-                <span className={styles.statLabel}>Purata Setiap Bayaran</span>
+                <span className={styles.statLabel}>{t.avgPerPaymentTitle}</span>
               </div>
               <div className={styles.stat}>
                 <span className={styles.statNum}>
                   RM {couples.length ? (totalRevenue / couples.length).toFixed(2) : '0.00'}
                 </span>
-                <span className={styles.statLabel}>Purata Pendapatan / Pasangan</span>
+                <span className={styles.statLabel}>{t.avgPerCoupleTitle}</span>
               </div>
             </div>
 
@@ -471,35 +539,35 @@ export default function SuperAdminDashboard() {
             <div className={styles.toolbar}>
               <input
                 className={styles.searchInput}
-                placeholder="🔍  Cari rekod bayaran..."
+                placeholder={t.searchPaymentsPlaceholder}
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />
               <button className={`btn btn-primary ${styles.btnManualPayment}`} onClick={() => setShowAddPaymentModal(true)}>
-                ＋ Log Bayaran Manual
+                {t.manualLogBtn}
               </button>
             </div>
 
             {/* Payments Table */}
             {paymentLoading ? (
-              <div className={styles.loading}><span className={styles.spinner} />Memuatkan data kewangan...</div>
+              <div className={styles.loading}><span className={styles.spinner} />{t.financialLoading}</div>
             ) : filteredPayments.length === 0 ? (
               <div className={styles.empty}>
                 <p>💰</p>
-                <p>Tiada rekod bayaran dijumpai.</p>
-                <button className="btn btn-primary" onClick={() => setShowAddPaymentModal(true)}>Log Bayaran Pertama</button>
+                <p>{t.financialNoData}</p>
+                <button className="btn btn-primary" onClick={() => setShowAddPaymentModal(true)}>{t.financialFirstLog}</button>
               </div>
             ) : (
               <div className={styles.tableWrap}>
                 <table className={styles.table}>
                   <thead>
                     <tr>
-                      <th>Tarikh</th>
-                      <th>Pasangan</th>
-                      <th>Pakej</th>
-                      <th>Jumlah Bayaran</th>
-                      <th>Catatan / Nota</th>
-                      <th>Tindakan</th>
+                      <th>{t.dateLabel}</th>
+                      <th>{t.coupleLabel}</th>
+                      <th>{t.packageLabel}</th>
+                      <th>{t.amountLabel}</th>
+                      <th>{t.notesLabel}</th>
+                      <th>{t.actionLabel}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -512,11 +580,11 @@ export default function SuperAdminDashboard() {
                         <td><div className={styles.tableNote} title={p.notes}>{p.notes || '—'}</div></td>
                         <td>
                           <div className={styles.actions}>
-                            <button className={`btn btn-sm ${styles.editBtn}`} onClick={() => setEditPayment(p)} title="Kemaskini">
-                              ✏️ Kemaskini
+                            <button className={`btn btn-sm ${styles.editBtn}`} onClick={() => setEditPayment(p)} title={t.updatePaymentTooltip}>
+                              {t.updateBtn}
                             </button>
-                            <button className={`btn btn-sm ${styles.deleteBtn}`} onClick={() => setDeletePaymentConfirm(p.id)} title="Padam">
-                              🗑️ Padam
+                            <button className={`btn btn-sm ${styles.deleteBtn}`} onClick={() => setDeletePaymentConfirm(p.id)} title={t.deletePaymentTooltip}>
+                              {t.deleteBtn}
                             </button>
                           </div>
                         </td>
@@ -531,97 +599,224 @@ export default function SuperAdminDashboard() {
 
         {subTab === 'text' && (
           <div className={styles.configSection}>
-            <div className={styles.sectionHeader}>
-              <h3>{t.textOverridesSection}</h3>
-              <p>{t.textOverridesDesc}</p>
+            <div className={styles.sectionHeader} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h3>{t.textOverridesSection}</h3>
+                <p>{t.textOverridesDesc}</p>
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <button 
+                  className="btn btn-sm" 
+                  style={{ background: 'var(--admin-stat-bg)', color: 'var(--admin-text)', border: '1px solid var(--admin-border)' }}
+                  onClick={handleExportTemplate}
+                >
+                  {t.exportAllBtn}
+                </button>
+                <button 
+                  className="btn btn-sm" 
+                  style={{ background: 'var(--admin-stat-bg)', color: 'var(--admin-text)', border: '1px solid var(--admin-border)' }}
+                  onClick={handleExportLang}
+                >
+                  {t.exportJson}
+                </button>
+                <label className="btn btn-sm" style={{ background: 'var(--admin-stat-bg)', color: 'var(--admin-text)', border: '1px solid var(--admin-border)', margin: 0, cursor: 'pointer' }}>
+                  {t.importJson}
+                  <input type="file" accept=".json" style={{ display: 'none' }} onChange={handleImportLang} />
+                </label>
+              </div>
             </div>
             
             <div className={styles.textGroups}>
-              {ADMIN_TEXT_KEYS.map((groupObj, i) => (
-                <div key={i} className={styles.textGroup}>
-                  <h4 className={styles.textGroupTitle}>
-                    {t[groupObj.group as keyof typeof t] || groupObj.group}
-                  </h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.25rem', padding: '0.5rem 0' }}>
-                    {groupObj.keys.map(key => {
-                      const defaultVal = ADMIN_DICT[lang][key as keyof typeof ADMIN_DICT['ms']] || key;
-                      const isOverridden = globalTextOverrides.hasOwnProperty(key);
-                      const currentVal = globalTextOverrides[key] || '';
-                      
-                      return (
-                        <div key={key} style={{ background: 'rgba(0,0,0,0.15)', padding: '1rem', borderRadius: '12px', border: '1px solid var(--admin-border)' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                            <label style={{ margin: 0, fontSize: '0.8rem', color: 'var(--admin-text-muted)', fontWeight: 600 }}>{defaultVal}</label>
-                            <label className="toggle-switch" style={{ transform: 'scale(0.7)', margin: 0 }}>
-                              <input type="checkbox" checked={isOverridden} onChange={e => {
-                                setHasUnsavedGlobalText(true);
-                                if (e.target.checked) {
-                                  setGlobalTextOverrides(prev => ({ ...prev, [key]: defaultVal }));
-                                } else {
-                                  setGlobalTextOverrides(prev => {
-                                    const next = { ...prev };
-                                    delete next[key];
-                                    return next;
-                                  });
-                                }
-                              }} />
-                              <span className="toggle-slider" />
-                            </label>
-                          </div>
-                          
-                          {isOverridden ? (
+              {ADMIN_TEXT_KEYS.map((groupObj, i) => {
+                const groupTitle = t[groupObj.group as keyof typeof t] || groupObj.group;
+                // Prepend group title key to keys list if not already present
+                const keysToRender = groupObj.keys.includes(groupObj.group)
+                  ? groupObj.keys
+                  : [groupObj.group, ...groupObj.keys];
+
+                return (
+                  <div key={i} className={styles.textGroup}>
+                    <h4 className={styles.textGroupTitle}>
+                      {groupTitle}
+                    </h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.25rem', padding: '0.5rem 0' }}>
+                      {keysToRender.map(key => {
+                        const systemDefaultVal = ADMIN_DICT[lang][key as keyof typeof ADMIN_DICT['ms']] || key;
+                        const baselineVal = importedJsonBase[key] || systemDefaultVal;
+                        const currentVal = globalTextOverrides[key] || '';
+                        
+                        // Toggle is ON if currentVal is set and differs from the baseline
+                        // Or if a JSON was just imported and pending save
+                        const isOverridden = isImportedPending 
+                          ? globalTextOverrides.hasOwnProperty(key)
+                          : (globalTextOverrides.hasOwnProperty(key) && globalTextOverrides[key] !== baselineVal);
+
+                        const displayLabel = isOverridden && currentVal ? currentVal : baselineVal;
+
+                        return (
+                          <div 
+                            key={key} 
+                            style={{ 
+                              background: isOverridden ? 'rgba(201,168,76,0.06)' : 'rgba(0,0,0,0.15)', 
+                              padding: '1rem', 
+                              borderRadius: '12px', 
+                              border: isOverridden ? '1px solid rgba(201,168,76,0.4)' : '1px solid var(--admin-border)',
+                              transition: 'all 0.2s ease'
+                            }}
+                          >
+                            {/* Card Header with Title and Toggle Switch */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', gap: '0.5rem' }}>
+                              <label style={{ margin: 0, fontSize: '0.82rem', color: isOverridden ? '#C9A84C' : 'var(--admin-text-muted)', fontWeight: 600, wordBreak: 'break-word' }}>
+                                {displayLabel}
+                                {isOverridden && <span style={{ fontSize: '0.68rem', color: '#C9A84C', opacity: 0.8, marginLeft: '0.4rem', fontWeight: 500 }}>(Custom)</span>}
+                              </label>
+                              <label className="toggle-switch" style={{ transform: 'scale(0.8)', margin: 0, flexShrink: 0 }} title="Aktifkan / Nyahaktifkan Suntingan Teks">
+                                <input 
+                                  type="checkbox" 
+                                  checked={isOverridden} 
+                                  onChange={e => {
+                                    setHasUnsavedGlobalText(true);
+                                    if (e.target.checked) {
+                                      setGlobalTextOverrides(prev => ({ ...prev, [key]: currentVal || baselineVal }));
+                                    } else {
+                                      setGlobalTextOverrides(prev => {
+                                        const next = { ...prev };
+                                        delete next[key];
+                                        return next;
+                                      });
+                                    }
+                                  }} 
+                                />
+                                <span className="toggle-slider" />
+                              </label>
+                            </div>
+
+                            {/* Card Body with always-visible input & stylish ↺ Default button */}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                              <textarea
-                                value={currentVal}
-                                placeholder={defaultVal}
-                                onChange={e => {
-                                  setGlobalTextOverrides(prev => ({ ...prev, [key]: e.target.value }));
-                                  setHasUnsavedGlobalText(true);
-                                }}
-                                style={{ 
-                                  width: '100%', 
-                                  minHeight: '42px',
-                                  padding: '0.65rem',
-                                  background: 'var(--admin-input-bg)',
-                                  border: currentVal ? '1px solid rgba(201,168,76,0.4)' : '1px solid var(--admin-border)',
-                                  color: 'var(--admin-text)',
-                                  borderRadius: '8px',
-                                  fontSize: '0.85rem',
-                                  resize: 'vertical',
-                                  fontFamily: 'inherit',
-                                  lineHeight: '1.4'
-                                }}
-                              />
-                              <button 
-                                className="btn btn-sm"
-                                style={{ alignSelf: 'flex-end', padding: '0.35rem 0.65rem', fontSize: '0.7rem', background: 'var(--admin-input-bg)', color: 'var(--admin-text-muted)', border: 'none' }}
-                                onClick={() => {
-                                  setGlobalTextOverrides(prev => ({ ...prev, [key]: defaultVal }));
-                                  setHasUnsavedGlobalText(true);
-                                }}
-                                title="Kembali ke teks lalai"
-                              >
-                                ↺ Default
-                              </button>
+                              {key === 'dateLocale' ? (
+                                <select
+                                  value={currentVal || baselineVal || (lang === 'en' ? 'en-US' : 'ms-MY')}
+                                  onChange={e => {
+                                    setHasUnsavedGlobalText(true);
+                                    const val = e.target.value;
+                                    setGlobalTextOverrides(prev => ({ ...prev, [key]: val }));
+                                  }}
+                                  style={{
+                                    width: '100%',
+                                    minHeight: '42px',
+                                    padding: '0.65rem',
+                                    background: 'var(--admin-input-bg)',
+                                    border: isOverridden ? '1px solid rgba(201,168,76,0.4)' : '1px solid var(--admin-border)',
+                                    color: 'var(--admin-text)',
+                                    borderRadius: '8px',
+                                    fontSize: '0.85rem',
+                                    fontFamily: 'inherit',
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  <option value="ms-MY" style={{ background: '#1a1d27', color: '#fff' }}>🇲🇾 Bahasa Melayu (ms-MY) — cth: 15 Ogos 2026</option>
+                                  <option value="en-US" style={{ background: '#1a1d27', color: '#fff' }}>🇺🇸 English US (en-US) — cth: Aug 15, 2026</option>
+                                  <option value="en-GB" style={{ background: '#1a1d27', color: '#fff' }}>🇬🇧 English UK (en-GB) — cth: 15 Aug 2026</option>
+                                  <option value="id-ID" style={{ background: '#1a1d27', color: '#fff' }}>🇮🇩 Bahasa Indonesia (id-ID) — cth: 15 Agt 2026</option>
+                                  <option value="zh-CN" style={{ background: '#1a1d27', color: '#fff' }}>🇨🇳 Chinese (zh-CN) — cth: 2026年8月15日</option>
+                                  <option value="ta-IN" style={{ background: '#1a1d27', color: '#fff' }}>🇮🇳 Tamil (ta-IN) — cth: 15 ஆக., 2026</option>
+                                  <option value="ar-SA" style={{ background: '#1a1d27', color: '#fff' }}>🇸🇦 Arabic (ar-SA) — cth: ١٥ أغسطس ٢٠٢٦</option>
+                                  <option value="ja-JP" style={{ background: '#1a1d27', color: '#fff' }}>🇯🇵 Japanese (ja-JP) — cth: 2026年8月15日</option>
+                                  <option value="fr-FR" style={{ background: '#1a1d27', color: '#fff' }}>🇫🇷 French (fr-FR) — cth: 15 août 2026</option>
+                                  <option value="de-DE" style={{ background: '#1a1d27', color: '#fff' }}>🇩🇪 German (de-DE) — cth: 15. Aug. 2026</option>
+                                </select>
+                              ) : (
+                                <textarea
+                                  value={currentVal}
+                                  placeholder={baselineVal}
+                                  onChange={e => {
+                                    setHasUnsavedGlobalText(true);
+                                    const val = e.target.value;
+                                    if (!val) {
+                                      setGlobalTextOverrides(prev => {
+                                        const next = { ...prev };
+                                        delete next[key];
+                                        return next;
+                                      });
+                                    } else {
+                                      setGlobalTextOverrides(prev => ({ ...prev, [key]: val }));
+                                    }
+                                  }}
+                                  style={{ 
+                                    width: '100%', 
+                                    minHeight: '42px',
+                                    padding: '0.65rem',
+                                    background: 'var(--admin-input-bg)',
+                                    border: isOverridden ? '1px solid rgba(201,168,76,0.4)' : '1px solid var(--admin-border)',
+                                    color: 'var(--admin-text)',
+                                    borderRadius: '8px',
+                                    fontSize: '0.85rem',
+                                    resize: 'vertical',
+                                    fontFamily: 'inherit',
+                                    lineHeight: '1.4'
+                                  }}
+                                />
+                              )}
+                              {isOverridden && (
+                                <button 
+                                  className="btn btn-sm"
+                                  style={{ alignSelf: 'flex-end', padding: '0.35rem 0.65rem', fontSize: '0.7rem', background: 'var(--admin-input-bg)', color: 'var(--admin-text-muted)', border: 'none' }}
+                                  onClick={() => {
+                                    setGlobalTextOverrides(prev => {
+                                      const next = { ...prev };
+                                      delete next[key];
+                                      return next;
+                                    });
+                                    setHasUnsavedGlobalText(true);
+                                  }}
+                                  title={t.resetToDefaultTooltip}
+                                >
+                                  ↺ Default
+                                </button>
+                              )}
                             </div>
-                          ) : (
-                            <div style={{ padding: '0.65rem 0.85rem', background: 'var(--admin-stat-bg)', borderRadius: '8px', color: 'var(--admin-text-muted)', fontSize: '0.85rem', border: '1px dashed var(--admin-border)' }}>
-                              {defaultVal} <span style={{ fontSize: '0.7rem', fontStyle: 'italic', marginLeft: '0.5rem', color: '#64748b' }}>(Auto)</span>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
       </div>
 
       {/* Add Couple Modal */}
-      {showAddModal && <AddCoupleModal onClose={() => setShowAddModal(false)} onCreated={(cred) => { setShowAddModal(false); setShowCredModal(cred); fetchCouples(); }} />}
+      {showAddModal && <AddCoupleModal t={t} onClose={() => setShowAddModal(false)} onCreated={(cred) => { setShowAddModal(false); setShowCredModal(cred); fetchCouples(); }} />}
+
+      {/* Edit Couple Modal */}
+      {editCouple && (
+        <EditCoupleModal
+          t={t}
+          couple={editCouple}
+          onClose={() => setEditCouple(null)}
+          onUpdated={() => {
+            setEditCouple(null);
+            fetchCouples();
+            showToast(t.coupleUpdatedToast);
+          }}
+        />
+      )}
+
+      {/* Feature Toggles Modal */}
+      {toggleCouple && (
+        <FeatureTogglesModal
+          t={t}
+          couple={toggleCouple}
+          onClose={() => setToggleCouple(null)}
+          onUpdated={() => {
+            setToggleCouple(null);
+            fetchCouples();
+            showToast('✅ Tetapan ciri laman berjaya dikemaskini!');
+          }}
+        />
+      )}
 
       {/* Credentials Modal */}
       {showCredModal && (() => {
@@ -632,36 +827,36 @@ export default function SuperAdminDashboard() {
         return (
           <div className="popup-overlay" onClick={() => setShowCredModal(null)}>
             <div className={styles.credModal} onClick={e => e.stopPropagation()}>
-              <h3>🎉 Kelayakan Akses</h3>
-              <p>Simpan maklumat ini dan kongsikan kepada pasangan.</p>
+              <h3>{t.accessQualTitle}</h3>
+              <p>{t.accessQualDesc}</p>
               <div className={styles.credBox}>
                 <div className={styles.credRow}>
-                  <span>Login ID</span>
+                  <span>{t.loginIdLabel}</span>
                   <strong>{showCredModal.loginId}</strong>
-                  <button onClick={() => { navigator.clipboard.writeText(showCredModal.loginId); showToast('Disalin!'); }} className={styles.copyBtn}>📋</button>
+                  <button onClick={() => { navigator.clipboard.writeText(showCredModal.loginId); showToast(t.copiedToast); }} className={styles.copyBtn}>📋</button>
                 </div>
                 <div className={styles.credRow}>
-                  <span>Kata Laluan</span>
+                  <span>{t.passwordLabel}</span>
                   {hasPassword ? (
                     <>
                       <strong>{showCredModal.password}</strong>
-                      <button onClick={() => { navigator.clipboard.writeText(showCredModal.password || ''); showToast('Disalin!'); }} className={styles.copyBtn}>📋</button>
+                      <button onClick={() => { navigator.clipboard.writeText(showCredModal.password || ''); showToast(t.copiedToast); }} className={styles.copyBtn}>📋</button>
                     </>
                   ) : (
                     <strong style={{ color: mustChange ? '#94a3b8' : '#e87c6f', fontStyle: 'italic', fontWeight: 'normal' }}>
-                      {mustChange ? '[Kata Laluan Sementara - Belum Ditukar]' : '[Kata Laluan Telah Ditukar Oleh Pengguna]'}
+                      {mustChange ? t.tempPassNotChanged : t.passChangedByUser}
                     </strong>
                   )}
                 </div>
                 <div className={styles.credRow}>
-                  <span>URL Jemputan</span>
+                  <span>{t.inviteUrlLabel}</span>
                   <strong>{typeof window !== 'undefined' ? `${window.location.origin}/${showCredModal.loginId}` : ''}</strong>
-                  <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/${showCredModal.loginId}`); showToast('Disalin!'); }} className={styles.copyBtn}>📋</button>
+                  <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/${showCredModal.loginId}`); showToast(t.copiedToast); }} className={styles.copyBtn}>📋</button>
                 </div>
                 <div className={styles.credRow}>
-                  <span>URL Admin</span>
+                  <span>{t.adminUrlLabel}</span>
                   <strong>{typeof window !== 'undefined' ? `${window.location.origin}/admin` : ''}</strong>
-                  <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/admin`); showToast('Disalin!'); }} className={styles.copyBtn}>📋</button>
+                  <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/admin`); showToast(t.copiedToast); }} className={styles.copyBtn}>📋</button>
                 </div>
               </div>
               
@@ -670,16 +865,16 @@ export default function SuperAdminDashboard() {
                   className="btn btn-danger" 
                   style={{ width: '100%', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }} 
                   onClick={async () => {
-                    if (confirm('Adakah anda pasti mahu menjana kata laluan baru untuk pasangan ini? Ini akan memaksa pasangan menukar kata laluan sekali lagi pada log masuk seterusnya.')) {
+                    if (confirm(t.confirmResetPassPrompt)) {
                       await handleResetPassword(showCredModal.id);
                     }
                   }}
                 >
-                  🔑 Jana Kata Laluan Baru
+                  {t.genNewPassBtn}
                 </button>
               )}
 
-              <button className="btn btn-outline" style={{ width: '100%' }} onClick={() => setShowCredModal(null)}>Tutup</button>
+              <button className="btn btn-outline" style={{ width: '100%' }} onClick={() => setShowCredModal(null)}>{t.closeBtn}</button>
             </div>
           </div>
         );
@@ -689,11 +884,11 @@ export default function SuperAdminDashboard() {
       {deleteConfirm && (
         <div className="popup-overlay" onClick={() => setDeleteConfirm(null)}>
           <div className={styles.confirmModal} onClick={e => e.stopPropagation()}>
-            <h3>⚠️ Padam Pasangan?</h3>
-            <p>Tindakan ini akan memadam <strong>semua data</strong> pasangan ini termasuk RSVP, ucapan, dan tetapan laman. Tindakan ini tidak boleh dibuat asal.</p>
+            <h3>{t.delCoupleTitle}</h3>
+            <p>{t.delCoupleDesc1} <strong>{t.delCoupleDesc2}</strong> {t.delCoupleDesc3}</p>
             <div className={styles.confirmBtns}>
-              <button className="btn btn-outline" onClick={() => setDeleteConfirm(null)}>Batal</button>
-              <button className="btn btn-danger" onClick={() => handleDelete(deleteConfirm)}>Ya, Padam</button>
+              <button className="btn btn-outline" onClick={() => setDeleteConfirm(null)}>{t.cancelBtn}</button>
+              <button className="btn btn-danger" onClick={() => handleDelete(deleteConfirm)}>{t.confirmDeleteBtn}</button>
             </div>
           </div>
         </div>
@@ -703,11 +898,11 @@ export default function SuperAdminDashboard() {
       {deletePaymentConfirm && (
         <div className="popup-overlay" onClick={() => setDeletePaymentConfirm(null)}>
           <div className={styles.confirmModal} onClick={e => e.stopPropagation()}>
-            <h3>⚠️ Padam Rekod Bayaran?</h3>
-            <p>Tindakan ini akan memadam rekod bayaran ini. Tindakan ini tidak boleh dibuat asal.</p>
+            <h3>{t.delPaymentTitle}</h3>
+            <p>{t.delPaymentDesc}</p>
             <div className={styles.confirmBtns}>
-              <button className="btn btn-outline" onClick={() => setDeletePaymentConfirm(null)}>Batal</button>
-              <button className="btn btn-danger" onClick={() => handleDeletePayment(deletePaymentConfirm)}>Ya, Padam</button>
+              <button className="btn btn-outline" onClick={() => setDeletePaymentConfirm(null)}>{t.cancelBtn}</button>
+              <button className="btn btn-danger" onClick={() => handleDeletePayment(deletePaymentConfirm)}>{t.confirmDeleteBtn}</button>
             </div>
           </div>
         </div>
@@ -716,12 +911,13 @@ export default function SuperAdminDashboard() {
       {/* Edit Payment Modal */}
       {editPayment && (
         <EditPaymentModal
+          t={t}
           payment={editPayment}
           onClose={() => setEditPayment(null)}
           onUpdated={() => {
             setEditPayment(null);
             fetchPayments();
-            showToast('✅ Rekod bayaran berjaya dikemaskini!');
+            showToast(t.paymentUpdatedToast);
           }}
         />
       )}
@@ -729,12 +925,13 @@ export default function SuperAdminDashboard() {
       {/* Add Payment Modal */}
       {showAddPaymentModal && (
         <AddPaymentModal
+          t={t}
           couples={couples}
           onClose={() => setShowAddPaymentModal(false)}
           onCreated={() => {
             setShowAddPaymentModal(false);
             fetchPayments();
-            showToast('✅ Bayaran manual direkodkan!');
+            showToast(t.paymentRecordedToast);
           }}
         />
       )}
@@ -742,10 +939,11 @@ export default function SuperAdminDashboard() {
       {/* Account Modal */}
       {showAccountModal && (
         <AccountModal
+          t={t}
           onClose={() => setShowAccountModal(false)}
           onSuccess={() => {
             setShowAccountModal(false);
-            showToast('✅ Kata laluan berjaya ditukar!');
+            showToast(t.passChangedSuccessToast);
           }}
         />
       )}
@@ -756,9 +954,10 @@ export default function SuperAdminDashboard() {
   );
 }
 
-function AddCoupleModal({ onClose, onCreated }: {
+function AddCoupleModal({ onClose, onCreated, t }: {
   onClose: () => void;
   onCreated: (cred: { loginId: string; password: string; id: string }) => void;
+  t: Record<string, string>;
 }) {
   const [form, setForm] = useState({
     groomName: '',
@@ -803,27 +1002,27 @@ function AddCoupleModal({ onClose, onCreated }: {
     <div className="popup-overlay" onClick={onClose}>
       <div className={styles.addModal} onClick={e => e.stopPropagation()}>
         <div className={styles.addModalHeader}>
-          <h3>➕ Tambah Pasangan Baru</h3>
+          <h3>{t.addCoupleModalTitle}</h3>
           <button className="popup-close" onClick={onClose}>✕</button>
         </div>
         <form onSubmit={handleSubmit} className={styles.addForm}>
           <div className={styles.formRow}>
             <div className="form-group">
-              <label>Nama Pengantin Lelaki *</label>
-              <input className="form-control" placeholder="cth: Adam" value={form.groomName} onChange={e => setForm(f => ({ ...f, groomName: e.target.value }))} required />
+              <label>{t.groomNameLabel}</label>
+              <input className="form-control" placeholder={t.groomPlaceholder} value={form.groomName} onChange={e => setForm(f => ({ ...f, groomName: e.target.value }))} required />
             </div>
             <div className="form-group">
-              <label>Nama Pengantin Perempuan *</label>
-              <input className="form-control" placeholder="cth: Hawa" value={form.brideName} onChange={e => setForm(f => ({ ...f, brideName: e.target.value }))} required />
+              <label>{t.brideNameLabel}</label>
+              <input className="form-control" placeholder={t.bridePlaceholder} value={form.brideName} onChange={e => setForm(f => ({ ...f, brideName: e.target.value }))} required />
             </div>
           </div>
           <div className={styles.formRow}>
             <div className="form-group">
-              <label>Tarikh Perkahwinan *</label>
+              <label>{t.weddingDateLabel}</label>
               <input className="form-control" type="date" value={form.weddingDate} onChange={e => setForm(f => ({ ...f, weddingDate: e.target.value }))} required />
             </div>
             <div className="form-group">
-              <label>Tema Asal</label>
+              <label>{t.themeLabel}</label>
               <select className="form-control" value={form.theme} onChange={e => setForm(f => ({ ...f, theme: e.target.value }))}>
                 {themes.map(t => <option key={t.key} value={t.key}>{t.label}</option>)}
               </select>
@@ -831,32 +1030,24 @@ function AddCoupleModal({ onClose, onCreated }: {
           </div>
           <div className={styles.formRow}>
             <div className="form-group">
-              <label>Pakej Langganan *</label>
+              <label>{t.pkgSubLabel2}</label>
               <select 
                 className="form-control" 
                 value={form.packageKey} 
                 onChange={e => {
                   const val = e.target.value;
-                  let days = '30';
-                  if (val === '3month') days = '90';
-                  else if (val === '6month') days = '180';
-                  else if (val === '1year') days = '365';
-                  else if (val === 'unlimited') days = '36500';
-                  
-                  setForm(f => ({ ...f, packageKey: val, customDays: days }));
+                  const pkg = AVAILABLE_PACKAGES.find(p => p.key === val);
+                  setForm(f => ({ ...f, packageKey: val, customDays: pkg ? pkg.days : '30' }));
                 }} 
                 required
               >
-                <option value="1month">1 Month</option>
-                <option value="3month">3 Month</option>
-                <option value="6month">6 Month</option>
-                <option value="1year">1 Year</option>
-                <option value="unlimited">Unlimited (Selamanya)</option>
-                <option value="custom">Custom (Hari Kustom)</option>
+                {AVAILABLE_PACKAGES.map(p => (
+                  <option key={p.key} value={p.key}>{t['pkg_' + p.key] || p.key}</option>
+                ))}
               </select>
             </div>
             <div className="form-group">
-              <label>Tempoh Aktif (Hari)</label>
+              <label>{t.activeDaysLabel}</label>
               <input
                 className="form-control"
                 type="number"
@@ -870,23 +1061,23 @@ function AddCoupleModal({ onClose, onCreated }: {
           </div>
           <div className={styles.formRow}>
             <div className="form-group">
-              <label>Bayaran Pendaftaran (RM)</label>
+              <label>{t.regFeeLabel}</label>
               <input className="form-control" type="number" min="0" placeholder="0.00" value={form.amountPaid} onChange={e => setForm(f => ({ ...f, amountPaid: e.target.value }))} />
             </div>
             <div className="form-group">
-              <label>Kata Laluan (pilihan)</label>
-              <input className="form-control" placeholder="Jana Rawak" value={form.customPassword} onChange={e => setForm(f => ({ ...f, customPassword: e.target.value }))} />
+              <label>{t.customPassLabel}</label>
+              <input className="form-control" placeholder={t.randPassPlaceholder} value={form.customPassword} onChange={e => setForm(f => ({ ...f, customPassword: e.target.value }))} />
             </div>
           </div>
           <div className="form-group">
-            <label>Login ID (pilihan — kosongkan untuk jana automatik)</label>
-            <input className="form-control" placeholder="cth: adam-hawa-2026" value={form.customLoginId} onChange={e => setForm(f => ({ ...f, customLoginId: e.target.value.toLowerCase().replace(/\s/g, '-') }))} />
+            <label>{t.customLoginIdLabel}</label>
+            <input className="form-control" placeholder={t.loginIdPlaceholder} value={form.customLoginId} onChange={e => setForm(f => ({ ...f, customLoginId: e.target.value.toLowerCase().replace(/\s/g, '-') }))} />
           </div>
           {error && <div style={{ color: '#e87c6f', fontSize: '0.85rem', background: 'rgba(192,57,43,.1)', padding: '0.6rem', borderRadius: '8px' }}>{error}</div>}
           <div className={styles.addModalFooter}>
             <button type="button" className="btn btn-outline" onClick={onClose}>Batal</button>
             <button type="submit" className="btn btn-primary" disabled={loading}>
-              {loading ? 'Mencipta...' : '✓ Cipta Pasangan'}
+              {loading ? t.creatingStatus : t.createCoupleBtn}
             </button>
           </div>
         </form>
@@ -895,10 +1086,11 @@ function AddCoupleModal({ onClose, onCreated }: {
   );
 }
 
-function AddPaymentModal({ couples, onClose, onCreated }: {
+function AddPaymentModal({ couples, onClose, onCreated, t }: {
   couples: CoupleRow[];
   onClose: () => void;
   onCreated: () => void;
+  t: Record<string, string>;
 }) {
   const [form, setForm] = useState({
     coupleId: '',
@@ -922,7 +1114,7 @@ function AddPaymentModal({ couples, onClose, onCreated }: {
       const data = await res.json();
       if (!res.ok) { setError(data.error); return; }
       onCreated();
-    } catch { setError('Ralat. Cuba semula.'); }
+    } catch { setError(t.genericRetry); }
     finally { setLoading(false); }
   }
 
@@ -930,14 +1122,14 @@ function AddPaymentModal({ couples, onClose, onCreated }: {
     <div className="popup-overlay" onClick={onClose}>
       <div className={styles.addModal} style={{ maxWidth: '460px' }} onClick={e => e.stopPropagation()}>
         <div className={styles.addModalHeader}>
-          <h3>➕ Log Rekod Bayaran Manual</h3>
+          <h3>{t.addPaymentModalTitle}</h3>
           <button className="popup-close" onClick={onClose}>✕</button>
         </div>
         <form onSubmit={handleSubmit} className={styles.addForm}>
           <div className="form-group">
-            <label>Pasangan Pengantin</label>
+            <label>{t.coupleNameLabel2}</label>
             <select className="form-control" value={form.coupleId} onChange={e => setForm(f => ({ ...f, coupleId: e.target.value }))}>
-              <option value="">— Kegunaan Am / Bayaran Offline —</option>
+              <option value="">{t.coupleSelectDefault}</option>
               {couples.map(c => (
                 <option key={c.id} value={c.id}>{c.groomName} &amp; {c.brideName} ({c.loginId})</option>
               ))}
@@ -945,7 +1137,7 @@ function AddPaymentModal({ couples, onClose, onCreated }: {
           </div>
           <div className={styles.formRow}>
             <div className="form-group">
-              <label>Jumlah Bayaran (RM) *</label>
+              <label>{t.amountLabelFull}</label>
               <input className="form-control" type="number" step="0.01" min="0.01" placeholder="0.00" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} required />
             </div>
             <div className="form-group">
@@ -954,14 +1146,14 @@ function AddPaymentModal({ couples, onClose, onCreated }: {
             </div>
           </div>
           <div className="form-group">
-            <label>Catatan (Pilihan)</label>
-            <textarea className="form-control" rows={3} placeholder="Catatan bayaran cth: Resit bank-in, bayaran tunai..." value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
+            <label>{t.notesOptLabel}</label>
+            <textarea className="form-control" rows={3} placeholder={t.notesPlaceholder} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
           </div>
           {error && <div style={{ color: '#e87c6f', fontSize: '0.85rem', background: 'rgba(192,57,43,.1)', padding: '0.6rem', borderRadius: '8px' }}>{error}</div>}
           <div className={styles.addModalFooter}>
-            <button type="button" className="btn btn-outline" onClick={onClose}>Batal</button>
+            <button type="button" className="btn btn-outline" onClick={onClose}>{t.generalCancelBtn}</button>
             <button type="submit" className="btn btn-primary" disabled={loading}>
-              {loading ? 'Merekod...' : '✓ Rekod Bayaran'}
+              {loading ? t.recordingStatus : t.recordPaymentBtn}
             </button>
           </div>
         </form>
@@ -974,10 +1166,12 @@ function EditPaymentModal({
   payment,
   onClose,
   onUpdated,
+  t,
 }: {
   payment: PaymentRow;
   onClose: () => void;
   onUpdated: () => void;
+  t: Record<string, string>;
 }) {
   const [form, setForm] = useState({
     amount: payment.amount.toString(),
@@ -1000,7 +1194,7 @@ function EditPaymentModal({
       const data = await res.json();
       if (!res.ok) { setError(data.error); return; }
       onUpdated();
-    } catch { setError('Ralat. Cuba semula.'); }
+    } catch { setError(t.genericRetry); }
     finally { setLoading(false); }
   }
 
@@ -1008,17 +1202,17 @@ function EditPaymentModal({
     <div className="popup-overlay" onClick={onClose}>
       <div className={styles.addModal} style={{ maxWidth: '460px' }} onClick={e => e.stopPropagation()}>
         <div className={styles.addModalHeader}>
-          <h3>✏️ Kemaskini Rekod Bayaran</h3>
+          <h3>{t.editPaymentModalTitle}</h3>
           <button className="popup-close" onClick={onClose}>✕</button>
         </div>
         <form onSubmit={handleSubmit} className={styles.addForm}>
           <div className="form-group">
-            <label>Pasangan Pengantin (Tidak Boleh Diubah)</label>
+            <label>{t.coupleNameLockedLabel}</label>
             <input className="form-control" type="text" value={payment.coupleName} disabled style={{ opacity: 0.7 }} />
           </div>
           <div className={styles.formRow}>
             <div className="form-group">
-              <label>Jumlah Bayaran (RM) *</label>
+              <label>{t.amountLabelFull}</label>
               <input className="form-control" type="number" step="0.01" min="0.01" placeholder="0.00" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} required />
             </div>
             <div className="form-group">
@@ -1027,14 +1221,14 @@ function EditPaymentModal({
             </div>
           </div>
           <div className="form-group">
-            <label>Catatan (Pilihan)</label>
-            <textarea className="form-control" rows={3} placeholder="Catatan bayaran..." value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
+            <label>{t.notesOptLabel}</label>
+            <textarea className="form-control" rows={3} placeholder={t.editNotesPlaceholder} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
           </div>
           {error && <div style={{ color: '#e87c6f', fontSize: '0.85rem', background: 'rgba(192,57,43,.1)', padding: '0.6rem', borderRadius: '8px' }}>{error}</div>}
           <div className={styles.addModalFooter}>
-            <button type="button" className="btn btn-outline" onClick={onClose}>Batal</button>
+            <button type="button" className="btn btn-outline" onClick={onClose}>{t.generalCancelBtn}</button>
             <button type="submit" className="btn btn-primary" disabled={loading}>
-              {loading ? 'Menyimpan...' : '✓ Kemaskini'}
+              {loading ? t.savingStatus : t.updateProfileBtn}
             </button>
           </div>
         </form>
@@ -1043,7 +1237,64 @@ function EditPaymentModal({
   );
 }
 
-function AccountModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+function EditCoupleModal({ couple, onClose, onUpdated, t }: { couple: CoupleRow; onClose: () => void; onUpdated: () => void; t: Record<string, string>; }) {
+  const [form, setForm] = useState({
+    packageName: couple.packageName || '',
+    expiresAt: couple.expiresAt ? new Date(couple.expiresAt).toISOString().split('T')[0] : '',
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/super-admin/couples/${couple.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          packageName: form.packageName,
+          expiresAt: form.expiresAt ? new Date(form.expiresAt).toISOString() : undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error); return; }
+      onUpdated();
+    } catch { setError(t.genericRetry); }
+    finally { setLoading(false); }
+  }
+
+  return (
+    <div className="popup-overlay" onClick={onClose}>
+      <div className={styles.addModal} style={{ maxWidth: '400px' }} onClick={e => e.stopPropagation()}>
+        <div className={styles.addModalHeader}>
+          <h3>{t.editCoupleModalTitle}</h3>
+          <button className="popup-close" onClick={onClose}>✕</button>
+        </div>
+        <form onSubmit={handleSubmit} className={styles.addForm}>
+          <div className="form-group">
+            <label>{t.packageLabel || 'Pakej'}</label>
+            <input className="form-control" type="text" placeholder={t.pkgNamePlaceholder} value={form.packageName} onChange={e => setForm(f => ({ ...f, packageName: e.target.value }))} required />
+          </div>
+          <div className="form-group">
+            <label>{t.expDateLabel || 'Expiry'}</label>
+            <input className="form-control" type="date" value={form.expiresAt} onChange={e => setForm(f => ({ ...f, expiresAt: e.target.value }))} required />
+          </div>
+          {error && <div style={{ color: '#e87c6f', fontSize: '0.85rem', background: 'rgba(192,57,43,.1)', padding: '0.6rem', borderRadius: '8px' }}>{error}</div>}
+          <div className={styles.addModalFooter}>
+            <button type="button" className="btn btn-outline" onClick={onClose}>{t.generalCancelBtn}</button>
+            <button type="submit" className="btn btn-primary" disabled={loading}>
+              {loading ? t.savingStatus : t.updateProfileBtn}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function AccountModal({ onClose, onSuccess, t }: { onClose: () => void; onSuccess: () => void; t: Record<string, string> }) {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -1053,7 +1304,7 @@ function AccountModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
-      setError('Kata laluan baru dan pengesahan kata laluan tidak sepadan.');
+      setError(t.passMismatchError);
       return;
     }
     setLoading(true);
@@ -1066,12 +1317,12 @@ function AccountModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || 'Ralat berlaku.');
+        setError(data.error || t.genericError);
         return;
       }
       onSuccess();
     } catch {
-      setError('Ralat sambungan. Cuba semula.');
+      setError(t.connErrorRetry);
     } finally {
       setLoading(false);
     }
@@ -1081,38 +1332,38 @@ function AccountModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
     <div className="popup-overlay" onClick={onClose}>
       <div className={styles.confirmModal} style={{ maxWidth: '440px' }} onClick={e => e.stopPropagation()}>
         <div className={styles.addModalHeader} style={{ padding: '0 0 1rem', borderBottom: '1px solid rgba(255,255,255,.08)', marginBottom: '1.25rem' }}>
-          <h3 style={{ margin: 0 }}>⚙️ Urus Akaun</h3>
+          <h3 style={{ margin: 0 }}>{t.manageAccountModalTitle}</h3>
           <button className="popup-close" onClick={onClose}>✕</button>
         </div>
         <form onSubmit={handleSubmit} style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div className="form-group">
-            <label>Kata Laluan Semasa *</label>
+            <label>{t.currPassLabel}</label>
             <input
               type="password"
               className="form-control"
-              placeholder="Masukkan kata laluan semasa..."
+              placeholder={t.currPassPlaceholder}
               value={currentPassword}
               onChange={e => setCurrentPassword(e.target.value)}
               required
             />
           </div>
           <div className="form-group">
-            <label>Kata Laluan Baru *</label>
+            <label>{t.newPassLabel}</label>
             <input
               type="password"
               className="form-control"
-              placeholder="Masukkan kata laluan baru..."
+              placeholder={t.newPassPlaceholder}
               value={newPassword}
               onChange={e => setNewPassword(e.target.value)}
               required
             />
           </div>
           <div className="form-group">
-            <label>Sahkan Kata Laluan Baru *</label>
+            <label>{t.confirmPassLabel}</label>
             <input
               type="password"
               className="form-control"
-              placeholder="Masukkan semula kata laluan baru..."
+              placeholder={t.confirmPassPlaceholder}
               value={confirmPassword}
               onChange={e => setConfirmPassword(e.target.value)}
               required
@@ -1122,9 +1373,9 @@ function AccountModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
           {error && <div style={{ color: '#e87c6f', fontSize: '0.85rem', background: 'rgba(192,57,43,.1)', padding: '0.65rem 0.9rem', borderRadius: '8px' }}>{error}</div>}
 
           <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
-            <button type="button" className="btn btn-outline" onClick={onClose}>Batal</button>
+            <button type="button" className="btn btn-outline" onClick={onClose}>{t.generalCancelBtn}</button>
             <button type="submit" className="btn btn-primary" disabled={loading}>
-              {loading ? 'Menukar...' : '✓ Tukar Kata Laluan'}
+              {loading ? t.changingPassStatus : t.changePassBtn}
             </button>
           </div>
         </form>
@@ -1132,4 +1383,155 @@ function AccountModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
     </div>
   );
 }
+
+function FeatureTogglesModal({
+  couple,
+  onClose,
+  onUpdated,
+  t,
+}: {
+  couple: CoupleRow;
+  onClose: () => void;
+  onUpdated: () => void;
+  t: Record<string, string>;
+}) {
+  const [toggles, setToggles] = useState<Record<string, boolean>>({
+    enableFloatingNav: couple.featureToggles?.enableFloatingNav ?? true,
+    enableCalendar: couple.featureToggles?.enableCalendar ?? true,
+    enableRsvp: couple.featureToggles?.enableRsvp ?? true,
+    enableMoney: couple.featureToggles?.enableMoney ?? true,
+    enableGift: couple.featureToggles?.enableGift ?? true,
+    enableGallery: couple.featureToggles?.enableGallery ?? true,
+    enableProgramme: couple.featureToggles?.enableProgramme ?? true,
+    enableContact: couple.featureToggles?.enableContact ?? true,
+    enableLocation: couple.featureToggles?.enableLocation ?? true,
+    enableDesignBuilder: couple.featureToggles?.enableDesignBuilder ?? true,
+    enableMusic: couple.featureToggles?.enableMusic ?? true,
+    enableTextOverrides: couple.featureToggles?.enableTextOverrides ?? true,
+    enableGateSection: couple.featureToggles?.enableGateSection ?? true,
+    enableHeroSection: couple.featureToggles?.enableHeroSection ?? true,
+    enableParentsSection: couple.featureToggles?.enableParentsSection ?? true,
+    enableCountdownSection: couple.featureToggles?.enableCountdownSection ?? true,
+    enableProgrammeSection: couple.featureToggles?.enableProgrammeSection ?? true,
+    enableGallerySection: couple.featureToggles?.enableGallerySection ?? true,
+    enableMessageSection: couple.featureToggles?.enableMessageSection ?? true,
+    enableClosingSection: couple.featureToggles?.enableClosingSection ?? true,
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/super-admin/couples/${couple.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ featureToggles: toggles }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error || 'Ralat berlaku.');
+        return;
+      }
+      onUpdated();
+    } catch {
+      setError('Ralat sambungan.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const moduleItems = [
+    { key: 'enableFloatingNav', label: '🧭 Bar Navigasi Terapung (Floating Nav)' },
+    { key: 'enableCalendar', label: '📅 Menu Kalendar' },
+    { key: 'enableRsvp', label: t.toggleRsvp || '📨 Modul & Tab RSVP' },
+    { key: 'enableMoney', label: t.toggleMoney || '💰 Modul Sumbangan Bank & QR' },
+    { key: 'enableGift', label: t.toggleGift || '🎁 Modul Senarai Hadiah & Wishlist' },
+    { key: 'enableGallery', label: t.toggleGallery || '📸 Modul Galeri Foto & Ucapan' },
+    { key: 'enableProgramme', label: t.toggleProgramme || '📋 Modul Aturcara Majlis' },
+    { key: 'enableContact', label: t.toggleContact || '📞 Modul Senarai Kenalan Keluarga' },
+    { key: 'enableLocation', label: t.toggleLocation || '📍 Modul Lokasi & Peta Waze' },
+    { key: 'enableDesignBuilder', label: t.toggleDesignBuilder || '✨ Tab Perekabentuk Visual Skrin' },
+    { key: 'enableMusic', label: t.toggleMusic || '🎵 Modul Muzik Latar' },
+    { key: 'enableTextOverrides', label: '✏️ Kebenaran Sunting Teks Global' },
+  ];
+
+  const sectionItems = [
+    { key: 'enableGateSection', label: '🚪 Skrin Pintu Gerbang (Gate Screen)' },
+    { key: 'enableHeroSection', label: '💌 Skrin Utama Kad Jemputan' },
+    { key: 'enableParentsSection', label: '👨‍👩‍👧 Skrin Ibu Bapa & Keluarga' },
+    { key: 'enableCountdownSection', label: '⏳ Skrin Pengiraan Masa (Countdown)' },
+    { key: 'enableProgrammeSection', label: '📋 Skrin Aturcara Majlis' },
+    { key: 'enableGallerySection', label: '🖼️ Skrin Galeri Foto & Ucapan' },
+    { key: 'enableMessageSection', label: '✍️ Skrin Mesej Khas Pasangan' },
+    { key: 'enableClosingSection', label: '🌸 Skrin Penutup Kad Jemputan' },
+  ];
+
+  return (
+    <div className="popup-overlay" onClick={onClose}>
+      <div className={styles.addModal} style={{ maxWidth: '520px' }} onClick={e => e.stopPropagation()}>
+        <div className={styles.addModalHeader}>
+          <h3>{t.featureTogglesModalTitle || '⚙️ Urus Ciri & Kebenaran Laman'}</h3>
+          <button className="popup-close" onClick={onClose}>✕</button>
+        </div>
+        <p style={{ color: 'var(--admin-text-muted)', fontSize: '0.8rem', margin: '0 0 1rem' }}>
+          {t.featureTogglesDesc || 'Aktifkan atau nyahaktifkan modul dan alat khusus untuk pasangan ini.'} (<strong>{couple.groomName} &amp; {couple.brideName}</strong>)
+        </p>
+        <form onSubmit={handleSubmit} className={styles.addForm}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxHeight: '420px', overflowY: 'auto', paddingRight: '0.25rem' }}>
+            <div>
+              <h5 style={{ margin: '0 0 0.5rem', color: '#C9A84C', fontSize: '0.82rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                📦 Modul Ciri & Kebenaran Admin
+              </h5>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {moduleItems.map(item => (
+                  <label key={item.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.55rem 0.8rem', background: 'var(--admin-stat-bg)', borderRadius: '8px', border: '1px solid var(--admin-border)', cursor: 'pointer' }}>
+                    <span style={{ fontSize: '0.82rem', color: 'var(--admin-text)', fontWeight: 500 }}>{item.label}</span>
+                    <input
+                      type="checkbox"
+                      checked={toggles[item.key] ?? true}
+                      onChange={e => setToggles(prev => ({ ...prev, [item.key]: e.target.checked }))}
+                      style={{ width: 17, height: 17, cursor: 'pointer', accentColor: 'var(--admin-accent)' }}
+                    />
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <h5 style={{ margin: '0 0 0.5rem', color: '#C9A84C', fontSize: '0.82rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                🖥️ Paparan Skrin Laman Web Live
+              </h5>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {sectionItems.map(item => (
+                  <label key={item.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.55rem 0.8rem', background: 'var(--admin-stat-bg)', borderRadius: '8px', border: '1px solid var(--admin-border)', cursor: 'pointer' }}>
+                    <span style={{ fontSize: '0.82rem', color: 'var(--admin-text)', fontWeight: 500 }}>{item.label}</span>
+                    <input
+                      type="checkbox"
+                      checked={toggles[item.key] ?? true}
+                      onChange={e => setToggles(prev => ({ ...prev, [item.key]: e.target.checked }))}
+                      style={{ width: 17, height: 17, cursor: 'pointer', accentColor: 'var(--admin-accent)' }}
+                    />
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {error && <div style={{ color: '#e87c6f', fontSize: '0.85rem', background: 'rgba(192,57,43,.1)', padding: '0.6rem', borderRadius: '8px', marginTop: '0.5rem' }}>{error}</div>}
+
+          <div className={styles.addModalFooter} style={{ marginTop: '1rem' }}>
+            <button type="button" className="btn btn-outline" onClick={onClose}>{t.generalCancelBtn}</button>
+            <button type="submit" className="btn btn-primary" disabled={loading}>
+              {loading ? 'Menyimpan...' : '✓ Simpan Ciri'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 
