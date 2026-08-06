@@ -1,7 +1,26 @@
 import fs from 'fs';
 import path from 'path';
 
-const DB_PATH = path.join(process.cwd(), 'data', 'db.json');
+function getDbFilePath(): string {
+  const defaultPath = path.join(process.cwd(), 'data', 'db.json');
+  // On Vercel or serverless production environments, use writable /tmp/db.json
+  if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
+    const tmpPath = path.join('/tmp', 'db.json');
+    if (!fs.existsSync(tmpPath)) {
+      try {
+        const dir = path.dirname(tmpPath);
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        if (fs.existsSync(defaultPath)) {
+          fs.copyFileSync(defaultPath, tmpPath);
+        }
+      } catch (e) {
+        console.warn('Unable to seed /tmp/db.json from defaultPath:', e);
+      }
+    }
+    return tmpPath;
+  }
+  return defaultPath;
+}
 
 export interface Contact {
   name: string;
@@ -373,9 +392,13 @@ const DEFAULT_CONFIG: WeddingConfig = {
 };
 
 function ensureDbFile(): Database {
-  const dir = path.dirname(DB_PATH);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  if (!fs.existsSync(DB_PATH)) {
+  const dbPath = getDbFilePath();
+  const dir = path.dirname(dbPath);
+  try {
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  } catch (_) {}
+
+  if (!fs.existsSync(dbPath)) {
     const initial: Database = {
       superAdmin: { username: '', passwordHash: '' },
       couples: [],
@@ -395,10 +418,22 @@ function ensureDbFile(): Database {
       statusMode: 'on',
       mustChangePassword: false,
     });
-    fs.writeFileSync(DB_PATH, JSON.stringify(initial, null, 2));
+    try { fs.writeFileSync(dbPath, JSON.stringify(initial, null, 2)); } catch (_) {}
     return initial;
   }
-  const db = JSON.parse(fs.readFileSync(DB_PATH, 'utf-8')) as Database;
+
+  let db: Database;
+  try {
+    db = JSON.parse(fs.readFileSync(dbPath, 'utf-8')) as Database;
+  } catch (e) {
+    db = {
+      superAdmin: { username: '', passwordHash: '' },
+      couples: [],
+      payments: [],
+      globalTextOverrides: {},
+    };
+  }
+
   let modified = false;
   if (!db.payments) {
     db.payments = [];
@@ -408,68 +443,73 @@ function ensureDbFile(): Database {
     db.globalTextOverrides = {};
     modified = true;
   }
-  // Auto-upgrade existing couples to ensure all enhanced demo features (photos, youtube, background, QR, gifts) are applied
-  db.couples.forEach(c => {
-    if (c.config) {
-      if (!c.config.photos || c.config.photos.length === 0) {
-        c.config.photos = [...DEFAULT_CONFIG.photos];
-        modified = true;
-      }
-      if (!c.config.unifiedBackgroundUrl) {
-        c.config.useUnifiedBackground = true;
-        c.config.unifiedBackgroundUrl = DEFAULT_CONFIG.unifiedBackgroundUrl;
-        modified = true;
-      }
-      if (!c.config.closingPhotoUrl) {
-        c.config.closingPhotoUrl = DEFAULT_CONFIG.closingPhotoUrl;
-        modified = true;
-      }
-      if (!c.config.youtubeUrl) {
-        c.config.youtubeUrl = DEFAULT_CONFIG.youtubeUrl;
-        modified = true;
-      }
-      if (!c.config.bankQrUrl) {
-        c.config.bankQrUrl = DEFAULT_CONFIG.bankQrUrl;
-        modified = true;
-      }
-      if (c.config.gifts) {
-        c.config.gifts = c.config.gifts.map((g, idx) => {
-          const defaultRef = DEFAULT_CONFIG.gifts[idx % DEFAULT_CONFIG.gifts.length];
-          if (!g.price || !g.imageUrl) {
-            modified = true;
-          }
-          return {
-            ...g,
-            price: g.price || defaultRef.price || 'RM 150.00',
-            imageUrl: g.imageUrl || defaultRef.imageUrl || 'https://images.unsplash.com/photo-1513885535751-8b9238bd345a?w=400&fit=crop',
-          };
-        });
-      }
-    }
-  });
 
-  // If demo couple is missing from parsed db, seed it
-  if (!db.couples.find(c => c.loginId === 'demo')) {
-    const demoConfig = getDefaultConfig();
-    demoConfig.groomName = 'Demo Groom';
-    demoConfig.brideName = 'Demo Bride';
-    db.couples.push({
-      id: 'demo',
-      loginId: 'demo',
-      passwordHash: '',
-      isActive: true,
-      createdAt: new Date().toISOString(),
-      config: demoConfig,
-      packageName: 'Demo Selamanya',
-      expiresAt: new Date(Date.now() + 3650 * 24 * 60 * 60 * 1000).toISOString(),
-      statusMode: 'on',
-      mustChangePassword: false,
+  // Auto-upgrade existing couples to ensure all enhanced demo features (photos, youtube, background, QR, gifts) are applied
+  if (db.couples) {
+    db.couples.forEach(c => {
+      if (c.config) {
+        if (!c.config.photos || c.config.photos.length === 0) {
+          c.config.photos = [...DEFAULT_CONFIG.photos];
+          modified = true;
+        }
+        if (!c.config.unifiedBackgroundUrl) {
+          c.config.useUnifiedBackground = true;
+          c.config.unifiedBackgroundUrl = DEFAULT_CONFIG.unifiedBackgroundUrl;
+          modified = true;
+        }
+        if (!c.config.closingPhotoUrl) {
+          c.config.closingPhotoUrl = DEFAULT_CONFIG.closingPhotoUrl;
+          modified = true;
+        }
+        if (!c.config.youtubeUrl) {
+          c.config.youtubeUrl = DEFAULT_CONFIG.youtubeUrl;
+          modified = true;
+        }
+        if (!c.config.bankQrUrl) {
+          c.config.bankQrUrl = DEFAULT_CONFIG.bankQrUrl;
+          modified = true;
+        }
+        if (c.config.gifts) {
+          c.config.gifts = c.config.gifts.map((g, idx) => {
+            const defaultRef = DEFAULT_CONFIG.gifts[idx % DEFAULT_CONFIG.gifts.length];
+            if (!g.price || !g.imageUrl) {
+              modified = true;
+            }
+            return {
+              ...g,
+              price: g.price || defaultRef.price || 'RM 150.00',
+              imageUrl: g.imageUrl || defaultRef.imageUrl || 'https://images.unsplash.com/photo-1513885535751-8b9238bd345a?w=400&fit=crop',
+            };
+          });
+        }
+      }
     });
-    modified = true;
+
+    // If demo couple is missing from parsed db, seed it
+    if (!db.couples.find(c => c.loginId === 'demo')) {
+      const demoConfig = getDefaultConfig();
+      demoConfig.groomName = 'Demo Groom';
+      demoConfig.brideName = 'Demo Bride';
+      db.couples.push({
+        id: 'demo',
+        loginId: 'demo',
+        passwordHash: '',
+        isActive: true,
+        createdAt: new Date().toISOString(),
+        config: demoConfig,
+        packageName: 'Demo Selamanya',
+        expiresAt: new Date(Date.now() + 3650 * 24 * 60 * 60 * 1000).toISOString(),
+        statusMode: 'on',
+        mustChangePassword: false,
+      });
+      modified = true;
+    }
   }
 
   if (modified) {
-    fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2));
+    try {
+      fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
+    } catch (_) {}
   }
   return db;
 }
@@ -479,9 +519,21 @@ export function readDb(): Database {
 }
 
 export function writeDb(db: Database): void {
-  const dir = path.dirname(DB_PATH);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2));
+  const targetPath = getDbFilePath();
+  try {
+    const dir = path.dirname(targetPath);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(targetPath, JSON.stringify(db, null, 2));
+  } catch (err: unknown) {
+    const fallbackPath = path.join('/tmp', 'db.json');
+    try {
+      const dir = path.dirname(fallbackPath);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(fallbackPath, JSON.stringify(db, null, 2));
+    } catch (e) {
+      console.error('Failed to write DB to fallback path:', e);
+    }
+  }
 }
 
 export function getDefaultConfig(): WeddingConfig {
