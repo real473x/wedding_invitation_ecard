@@ -5,13 +5,13 @@ import { Lang, getAdminText } from '@/lib/i18n';
 import styles from './login.module.css';
 
 export default function SuperAdminLogin() {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [setupRequired, setSetupRequired] = useState<boolean | null>(null);
-  const [registeredEmail, setRegisteredEmail] = useState('');
+  const [registeredUsername, setRegisteredUsername] = useState('');
   const [theme, setTheme] = useState('dark');
   const [lang, setLang] = useState<Lang>('ms');
   const [globalTextOverrides, setGlobalTextOverrides] = useState<Record<string, string>>({});
@@ -32,7 +32,7 @@ export default function SuperAdminLogin() {
 
     fetch('/api/super-admin/login').then(res => res.json()).then(data => {
       setSetupRequired(!!data.setupRequired);
-      if (data.email) setEmail(data.email);
+      if (data.username) setUsername(data.username);
     }).catch(() => {
       setSetupRequired(false);
     });
@@ -70,7 +70,7 @@ export default function SuperAdminLogin() {
       const res = await fetch('/api/super-admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ username, password }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -79,8 +79,8 @@ export default function SuperAdminLogin() {
       }
 
       if (data.firstTime || setupRequired) {
-        const adminEmail = data.email || email;
-        setRegisteredEmail(adminEmail);
+        const adminUser = data.username || username;
+        setRegisteredUsername(adminUser);
         setTimeout(() => {
           router.push('/super-admin');
         }, 1800);
@@ -94,10 +94,10 @@ export default function SuperAdminLogin() {
     }
   }
 
-  const successBanner = registeredEmail ? (
+  const successBanner = registeredUsername ? (
     t.superAdminSetupSuccess
-      ? t.superAdminSetupSuccess.replace('{email}', registeredEmail)
-      : `✅ E-mel anda ${registeredEmail} telah didaftarkan sebagai E-mel Super Admin untuk sistem ini!`
+      ? t.superAdminSetupSuccess.replace('{username}', registeredUsername)
+      : `✅ Nama pengguna ${registeredUsername} telah didaftarkan sebagai Super Admin untuk sistem ini!`
   ) : '';
 
   return (
@@ -145,7 +145,7 @@ export default function SuperAdminLogin() {
           <p>{setupRequired ? (t.superAdminSetupTitle || '👑 Tetapan Pertama Super Admin') : t.superAdminTitle}</p>
         </div>
 
-        {registeredEmail ? (
+        {registeredUsername ? (
           <div style={{ textAlign: 'center', padding: '1rem 0' }}>
             <div className={styles.notice} style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.4)', color: '#10b981', padding: '1.25rem', borderRadius: '12px', marginBottom: '1rem', fontSize: '0.9rem', lineHeight: '1.6' }}>
               {successBanner}
@@ -158,18 +158,18 @@ export default function SuperAdminLogin() {
           <form onSubmit={handleSubmit} className={styles.form}>
             {setupRequired && (
               <div className={styles.notice} style={{ background: 'rgba(201, 168, 76, 0.15)', border: '1px solid rgba(201, 168, 76, 0.3)', color: '#C9A84C', padding: '0.85rem', borderRadius: '10px', fontSize: '0.82rem', lineHeight: '1.5', marginBottom: '1rem' }}>
-                👋 {t.superAdminLoginHint || 'Sila daftarkan E-mel dan Kata Laluan Super Admin anda untuk memulakan sistem.'}
+                👋 {t.superAdminLoginHint || 'Sila daftarkan Nama Pengguna dan Kata Laluan Super Admin anda untuk memulakan sistem.'}
               </div>
             )}
 
             <div className="form-group" style={{ marginBottom: '1rem' }}>
-              <label>{t.superAdminEmailLabel || 'E-mel Super Admin *'}</label>
+              <label>{t.superAdminUsernameLabel || 'Nama Pengguna Super Admin *'}</label>
               <input
-                type="email"
+                type="text"
                 className="form-control"
-                placeholder={t.enterSuperAdminEmail || 'Masukkan e-mel super admin...'}
-                value={email}
-                onChange={e => setEmail(e.target.value)}
+                placeholder={t.enterSuperAdminUsername || 'Masukkan nama pengguna super admin...'}
+                value={username}
+                onChange={e => setUsername(e.target.value)}
                 required
                 autoFocus
               />

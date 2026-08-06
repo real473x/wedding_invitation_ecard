@@ -8,30 +8,30 @@ export async function GET() {
   const setupRequired = !db.superAdmin.passwordHash;
   return NextResponse.json({
     setupRequired,
-    email: db.superAdmin.email || '',
+    username: db.superAdmin.username || '',
   });
 }
 
 // POST /api/super-admin/login — Login or Setup Super Admin account
 export async function POST(req: NextRequest) {
-  const { email, password } = await req.json();
+  const { username, password } = await req.json();
   if (!password) {
     return NextResponse.json({ error: 'Sila isi kata laluan.' }, { status: 400 });
   }
 
   const db = readDb();
 
-  // First-time setup: if no password hash exists, register email and password
+  // First-time setup: if no password hash exists, register username and password
   if (!db.superAdmin.passwordHash) {
-    if (!email || !email.includes('@')) {
-      return NextResponse.json({ error: 'Sila masukkan e-mel yang sah.' }, { status: 400 });
+    if (!username || username.trim().length < 3) {
+      return NextResponse.json({ error: 'Nama pengguna mestilah sekurang-kurangnya 3 aksara.' }, { status: 400 });
     }
     if (password.length < 6) {
       return NextResponse.json({ error: 'Kata laluan mestilah sekurang-kurangnya 6 aksara.' }, { status: 400 });
     }
 
-    const cleanEmail = email.trim().toLowerCase();
-    db.superAdmin.email = cleanEmail;
+    const cleanUsername = username.trim();
+    db.superAdmin.username = cleanUsername;
     db.superAdmin.passwordHash = await hashPassword(password);
     writeDb(db);
 
@@ -40,20 +40,20 @@ export async function POST(req: NextRequest) {
     session.isLoggedIn = true;
     await session.save();
 
-    return NextResponse.json({ ok: true, firstTime: true, email: cleanEmail });
+    return NextResponse.json({ ok: true, firstTime: true, username: cleanUsername });
   }
 
-  // Normal login: verify email if superadmin email is set
-  if (db.superAdmin.email && email) {
-    const inputEmail = email.trim().toLowerCase();
-    if (inputEmail !== db.superAdmin.email.toLowerCase()) {
-      return NextResponse.json({ error: 'E-mel atau kata laluan tidak sah.' }, { status: 401 });
+  // Normal login: verify username if superadmin username is set
+  if (db.superAdmin.username && username) {
+    const inputUsername = username.trim().toLowerCase();
+    if (inputUsername !== db.superAdmin.username.toLowerCase()) {
+      return NextResponse.json({ error: 'Nama pengguna atau kata laluan tidak sah.' }, { status: 401 });
     }
   }
 
   const valid = await verifyPassword(password, db.superAdmin.passwordHash);
   if (!valid) {
-    return NextResponse.json({ error: 'E-mel atau kata laluan tidak sah.' }, { status: 401 });
+    return NextResponse.json({ error: 'Nama pengguna atau kata laluan tidak sah.' }, { status: 401 });
   }
 
   const session = await getSuperAdminSession();
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
   session.isLoggedIn = true;
   await session.save();
 
-  return NextResponse.json({ ok: true, email: db.superAdmin.email });
+  return NextResponse.json({ ok: true, username: db.superAdmin.username });
 }
 
 export async function DELETE() {
