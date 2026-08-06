@@ -3,7 +3,7 @@
 .container { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 0.6rem; max-width: 380px; padding: 1rem; }
 .heartAnim { font-size: 2.25rem; animation: heartbeat 1.5s ease-in-out infinite; }
 @keyframes heartbeat { 0%,100%{transform:scale(1);} 50%{transform:scale(1.15);} }
-.title { font-size: clamp(1.6rem, 5vw, 2rem); color: var(--adaptive-accent, var(--color-accent-light)); font-weight: 700; margin-bottom: 0.15rem; }
+.title { font-size: var(--section-heading-size, clamp(1.6rem, 5vw, 2rem)); color: var(--heading-color, var(--adaptive-accent, var(--color-accent-light))); font-weight: 700; margin-bottom: 0.15rem; }
 .couplePhotoWrapper {
   margin: 0.75rem 0;
   display: flex;
@@ -46,10 +46,10 @@
 }
 .orn { width: 100%; color: rgba(255,255,255,.4); margin: 0.25rem 0 !important; }
 .orn::before, .orn::after { background: linear-gradient(to right, transparent, rgba(255,255,255,.3), transparent); }
-.text { font-size: clamp(0.85rem, 3vw, 0.95rem); color: var(--adaptive-text-muted, rgba(255,255,255,.75)); line-height: 1.5; }
+.text { font-size: var(--section-body-size, clamp(0.85rem, 3vw, 0.95rem)); color: var(--body-color, var(--adaptive-text-muted, rgba(255,255,255,.75))); line-height: 1.5; }
 .signatures { display: flex; align-items: center; gap: 1.5rem; margin-top: 0.25rem; }
 .sigCouple { display: flex; flex-direction: column; align-items: center; gap: 0.15rem; }
-.sigName { font-size: clamp(1rem,3.5vw,1.3rem); color: var(--adaptive-accent, var(--color-accent-light)); }
+.sigName { font-size: var(--section-accent-size, clamp(1rem,3.5vw,1.3rem)); color: var(--accent-color, var(--adaptive-accent, var(--color-accent-light))); }
 .sigLine { width: 80px; height: 1px; background: linear-gradient(to right,transparent,var(--adaptive-accent, var(--color-accent-light)),transparent); }
 .sigHeart { font-size: 1.4rem; animation: float 3s ease-in-out infinite; }
 @keyframes float { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-6px);} }
@@ -123,8 +123,8 @@
   .section {
     padding-bottom: calc(15dvh + env(safe-area-inset-bottom, 0px)) !important;
   }
-  .title { font-size: 2.3rem !important; }
-  .text { font-size: 1.05rem !important; line-height: 2; }
-  .sigName { font-size: 1.45rem !important; }
-  .musicNoteToggle { font-size: 0.88rem !important; padding: 0.55rem 1.25rem !important; }
+  .title { font-size: 2.3rem; }
+  .text { font-size: 1.05rem; line-height: 2; }
+  .sigName { font-size: 1.45rem; }
+  .musicNoteToggle { font-size: 0.88rem; padding: 0.55rem 1.25rem !important; }
 }

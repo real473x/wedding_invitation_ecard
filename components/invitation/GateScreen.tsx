@@ -1,5 +1,6 @@
 'use client';
 import { WeddingConfig } from '@/lib/db';
+import { getElementStyle } from '@/lib/element-styles';
 import { THEMES } from '@/lib/themes';
 import styles from './GateScreen.module.css';
 
@@ -14,6 +15,8 @@ export default function GateScreen({ config, onOpen, isOpen, isClosing, lang, te
   const bgUrl = (config.useUnifiedBackground && config.unifiedBackgroundUrl)
     ? config.unifiedBackgroundUrl
     : (config.backgrounds?.gate || themeObj.defaultBg);
+
+  const secStyle = config.pageStyles?.gate;
 
   const bgStyleLeft = {
     backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.35)), url(${bgUrl})`,
@@ -42,18 +45,18 @@ export default function GateScreen({ config, onOpen, isOpen, isClosing, lang, te
       {/* Center content (above/on gate) - Etched Stamp Style */}
       <div className={`${styles.content} ${isOpen ? styles.contentFadeOut : ''}`}>
         <div className={styles.topOrnament}>✦</div>
-        <p className={`${styles.invitedText} font-script`}>{t.walimatulurus}</p>
-        <h1 className={styles.coupleName}>
+        <p className={`${styles.invitedText} font-script`} style={getElementStyle(secStyle, 'gateWalimatulurus', 'accentStyle')}>{t.walimatulurus}</p>
+        <h1 className={styles.coupleName} style={getElementStyle(secStyle, 'gateTitle', 'headingStyle')}>
           <span>{config.groomName}</span>
           <span className={styles.ampersand}>&</span>
           <span>{config.brideName}</span>
         </h1>
-        <p className={styles.date}>
+        <p className={styles.date} style={getElementStyle(secStyle, 'gateDearGuest', 'bodyStyle')}>
           {textOverrides?.hasOwnProperty('gateDate') 
             ? (textOverrides.gateDate || '') 
             : `${config.weddingDay}, ${config.weddingDate ? new Date(config.weddingDate + 'T00:00:00').toLocaleDateString(currentLang === 'en' ? 'en-US' : 'ms-MY', { day: 'numeric', month: 'long', year: 'numeric' }) : ''}`}
         </p>
-        <button className={`btn ${styles.openBtn}`} onClick={onOpen} aria-label={t.openInvitation}>
+        <button className={`btn ${styles.openBtn}`} onClick={onOpen} aria-label={t.openInvitation} style={getElementStyle(secStyle, 'gateOpenBtn', 'headingStyle')}>
           <span>{t.openInvitation}</span>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </button>

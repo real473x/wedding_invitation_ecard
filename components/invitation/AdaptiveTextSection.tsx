@@ -43,10 +43,26 @@ export default function AdaptiveTextSection({ children, className, style, id, de
     dep,
   );
 
+  const customHeadingColor = (style as Record<string, string>)?.[
+    '--heading-color'
+  ] || (style as Record<string, string>)?.[
+    '--custom-heading-color'
+  ];
+  const customBodyColor = (style as Record<string, string>)?.[
+    '--body-color'
+  ] || (style as Record<string, string>)?.[
+    '--custom-body-color'
+  ];
+  const customAccentColor = (style as Record<string, string>)?.[
+    '--accent-color'
+  ] || (style as Record<string, string>)?.[
+    '--custom-accent-color'
+  ];
+
   const adaptiveVars: CSSProperties = {
-    '--adaptive-text': textColor,
-    '--adaptive-text-muted': mutedColor,
-    '--adaptive-accent': accentColor,
+    '--adaptive-text': customHeadingColor || textColor,
+    '--adaptive-text-muted': customBodyColor || mutedColor,
+    '--adaptive-accent': customAccentColor || accentColor,
     '--adaptive-is-dark': isDark ? '1' : '0',
   } as CSSProperties;
 
@@ -55,7 +71,7 @@ export default function AdaptiveTextSection({ children, className, style, id, de
       ref={ref}
       id={id}
       className={className}
-      style={{ ...style, ...adaptiveVars }}
+      style={{ ...adaptiveVars, ...style }}
       data-bg-dark={isDark ? 'true' : 'false'}
     >
       {children}

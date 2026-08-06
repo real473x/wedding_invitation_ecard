@@ -668,7 +668,7 @@ export default function SuperAdminDashboard() {
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', gap: '0.5rem' }}>
                               <label style={{ margin: 0, fontSize: '0.82rem', color: isOverridden ? '#C9A84C' : 'var(--admin-text-muted)', fontWeight: 600, wordBreak: 'break-word' }}>
                                 {displayLabel}
-                                {isOverridden && <span style={{ fontSize: '0.68rem', color: '#C9A84C', opacity: 0.8, marginLeft: '0.4rem', fontWeight: 500 }}>(Kustom)</span>}
+                                {isOverridden && <span style={{ fontSize: '0.68rem', color: '#C9A84C', opacity: 0.8, marginLeft: '0.4rem', fontWeight: 500 }}>(Custom)</span>}
                               </label>
                               <label className="toggle-switch" style={{ transform: 'scale(0.8)', margin: 0, flexShrink: 0 }} title="Aktifkan / Nyahaktifkan Suntingan Teks">
                                 <input 
@@ -1396,6 +1396,8 @@ function FeatureTogglesModal({
   t: Record<string, string>;
 }) {
   const [toggles, setToggles] = useState<Record<string, boolean>>({
+    enableFloatingNav: couple.featureToggles?.enableFloatingNav ?? true,
+    enableCalendar: couple.featureToggles?.enableCalendar ?? true,
     enableRsvp: couple.featureToggles?.enableRsvp ?? true,
     enableMoney: couple.featureToggles?.enableMoney ?? true,
     enableGift: couple.featureToggles?.enableGift ?? true,
@@ -1442,6 +1444,8 @@ function FeatureTogglesModal({
   }
 
   const moduleItems = [
+    { key: 'enableFloatingNav', label: '🧭 Bar Navigasi Terapung (Floating Nav)' },
+    { key: 'enableCalendar', label: '📅 Menu Kalendar' },
     { key: 'enableRsvp', label: t.toggleRsvp || '📨 Modul & Tab RSVP' },
     { key: 'enableMoney', label: t.toggleMoney || '💰 Modul Sumbangan Bank & QR' },
     { key: 'enableGift', label: t.toggleGift || '🎁 Modul Senarai Hadiah & Wishlist' },

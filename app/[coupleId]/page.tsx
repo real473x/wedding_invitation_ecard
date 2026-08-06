@@ -164,6 +164,11 @@ export default function InvitationPage({ params }: { params: Promise<{ coupleId:
         if (st?.headingStyle?.fontFamily) customFonts.push(st.headingStyle.fontFamily);
         if (st?.bodyStyle?.fontFamily) customFonts.push(st.bodyStyle.fontFamily);
         if (st?.accentStyle?.fontFamily) customFonts.push(st.accentStyle.fontFamily);
+        if (st?.elements) {
+          Object.values(st.elements).forEach((el: any) => {
+            if (el?.fontFamily) customFonts.push(el.fontFamily);
+          });
+        }
       });
     }
 

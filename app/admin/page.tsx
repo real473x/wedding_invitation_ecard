@@ -383,7 +383,7 @@ export default function CoupleAdminPage() {
           {/* ── REKA BENTUK (Canva Builder) ── */}
           {activeTab === 'reka' && (
             <Section title={t.visualBuilderSection}>
-              <DesignBuilderTab config={config} update={update} lang={lang} t={t} />
+              <DesignBuilderTab config={config} update={update} lang={lang} t={t} onSave={save} />
             </Section>
           )}
 
@@ -445,22 +445,153 @@ export default function CoupleAdminPage() {
           )}
 
           {activeTab === 'skrin' && (
-            <Section title={t.sectionVisibility}>
-              <p className={styles.sectionHint}>{t.sectionVisibilityDesc}</p>
-              <div className={styles.toggleList}>
-                {Object.entries(config.sections).map(([key, val]) => (
-                  <div key={key} className={styles.toggleRow}>
+            <>
+              <Section title={t.sectionVisibility}>
+                <p className={styles.sectionHint}>{t.sectionVisibilityDesc}</p>
+                <div className={styles.toggleList}>
+                  {Object.entries(config.sections).map(([key, val]) => (
+                    <div key={key} className={styles.toggleRow}>
+                      <div>
+                        <div className={styles.toggleLabel}>{SECTION_LABELS[key] || key}</div>
+                      </div>
+                      <label className="toggle-switch">
+                        <input type="checkbox" checked={val} onChange={e => update({ sections: { ...config.sections, [key]: e.target.checked } })} />
+                        <span className="toggle-slider" />
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </Section>
+
+              {/* 🧭 Floating Navigation Bar Settings */}
+              <Section title={lang === 'en' ? '🧭 Floating Navigation Bar' : '🧭 Bar Navigasi Terapung'}>
+                <p className={styles.sectionHint}>
+                  {lang === 'en'
+                    ? 'Enable or disable the floating navigation bar at the bottom of the live website that contains menu items ("RSVP", "Calendar", "Contact", "Location", "Cash Gift", "Gift").'
+                    : 'Aktifkan atau nyahaktifkan bar navigasi terapung di bahagian bawah laman web live yang mengandungi menu "RSVP", "Kalendar", "Kenalan", "Lokasi", "Hadiah Wang", dan "Hadiah Hantaran".'}
+                </p>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  {/* Main Toggle */}
+                  <div className={styles.toggleRow} style={{ borderBottom: '1px solid var(--admin-border)', paddingBottom: '1rem' }}>
                     <div>
-                      <div className={styles.toggleLabel}>{SECTION_LABELS[key] || key}</div>
+                      <div className={styles.toggleLabel} style={{ fontSize: '0.95rem', fontWeight: 700, color: '#C9A84C' }}>
+                        {lang === 'en' ? 'Show Floating Navigation Bar on Live Website' : 'Paparkan Bar Navigasi Terapung pada Laman Web Live'}
+                      </div>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--admin-text-muted)', marginTop: '0.2rem' }}>
+                        {lang === 'en'
+                          ? 'When turned OFF, the entire floating bottom menu will be hidden on the live website.'
+                          : 'Apabila di-OFF, kesemua menu pintas di bahagian bawah laman web live akan disembunyikan sepenuhnya.'}
+                      </div>
                     </div>
                     <label className="toggle-switch">
-                      <input type="checkbox" checked={val} onChange={e => update({ sections: { ...config.sections, [key]: e.target.checked } })} />
+                      <input
+                        type="checkbox"
+                        checked={config.featureToggles?.enableFloatingNav !== false}
+                        onChange={e =>
+                          update({
+                            featureToggles: {
+                              ...(config.featureToggles || {}),
+                              enableFloatingNav: e.target.checked,
+                            },
+                          })
+                        }
+                      />
                       <span className="toggle-slider" />
                     </label>
                   </div>
-                ))}
-              </div>
-            </Section>
+
+                  {/* Individual Menu Item Toggles */}
+                  {config.featureToggles?.enableFloatingNav !== false && (
+                    <div>
+                      <h4 style={{ fontSize: '0.82rem', color: 'var(--admin-text)', fontWeight: 600, marginBottom: '0.75rem' }}>
+                        📌 {lang === 'en' ? 'Individual Navigation Menu Items' : 'Pilihan Menu Navigasi Individu'}
+                      </h4>
+                      <div className={styles.toggleList}>
+                        <div className={styles.toggleRow}>
+                          <div>
+                            <div className={styles.toggleLabel}>📩 RSVP</div>
+                          </div>
+                          <label className="toggle-switch">
+                            <input
+                              type="checkbox"
+                              checked={config.featureToggles?.enableRsvp !== false}
+                              onChange={e => update({ featureToggles: { ...(config.featureToggles || {}), enableRsvp: e.target.checked } })}
+                            />
+                            <span className="toggle-slider" />
+                          </label>
+                        </div>
+                        <div className={styles.toggleRow}>
+                          <div>
+                            <div className={styles.toggleLabel}>📅 {lang === 'en' ? 'Calendar' : 'Kalendar'}</div>
+                          </div>
+                          <label className="toggle-switch">
+                            <input
+                              type="checkbox"
+                              checked={config.featureToggles?.enableCalendar !== false}
+                              onChange={e => update({ featureToggles: { ...(config.featureToggles || {}), enableCalendar: e.target.checked } })}
+                            />
+                            <span className="toggle-slider" />
+                          </label>
+                        </div>
+                        <div className={styles.toggleRow}>
+                          <div>
+                            <div className={styles.toggleLabel}>📞 {lang === 'en' ? 'Contact' : 'Kenalan'}</div>
+                          </div>
+                          <label className="toggle-switch">
+                            <input
+                              type="checkbox"
+                              checked={config.featureToggles?.enableContact !== false}
+                              onChange={e => update({ featureToggles: { ...(config.featureToggles || {}), enableContact: e.target.checked } })}
+                            />
+                            <span className="toggle-slider" />
+                          </label>
+                        </div>
+                        <div className={styles.toggleRow}>
+                          <div>
+                            <div className={styles.toggleLabel}>📍 {lang === 'en' ? 'Location' : 'Lokasi'}</div>
+                          </div>
+                          <label className="toggle-switch">
+                            <input
+                              type="checkbox"
+                              checked={config.featureToggles?.enableLocation !== false}
+                              onChange={e => update({ featureToggles: { ...(config.featureToggles || {}), enableLocation: e.target.checked } })}
+                            />
+                            <span className="toggle-slider" />
+                          </label>
+                        </div>
+                        <div className={styles.toggleRow}>
+                          <div>
+                            <div className={styles.toggleLabel}>💵 {lang === 'en' ? 'Cash Gift' : 'Hadiah Wang (Salam Kaut)'}</div>
+                          </div>
+                          <label className="toggle-switch">
+                            <input
+                              type="checkbox"
+                              checked={config.featureToggles?.enableMoney !== false}
+                              onChange={e => update({ featureToggles: { ...(config.featureToggles || {}), enableMoney: e.target.checked } })}
+                            />
+                            <span className="toggle-slider" />
+                          </label>
+                        </div>
+                        <div className={styles.toggleRow}>
+                          <div>
+                            <div className={styles.toggleLabel}>🎁 {lang === 'en' ? 'Gift Registry' : 'Hadiah Hantaran (Wishlist)'}</div>
+                          </div>
+                          <label className="toggle-switch">
+                            <input
+                              type="checkbox"
+                              checked={config.featureToggles?.enableGift !== false}
+                              onChange={e => update({ featureToggles: { ...(config.featureToggles || {}), enableGift: e.target.checked } })}
+                            />
+                            <span className="toggle-slider" />
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </Section>
+            </>
           )}
           {/* ── TEKS (Text Overrides) ── */}
           {activeTab === 'teks' && (

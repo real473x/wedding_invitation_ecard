@@ -53,6 +53,8 @@ export interface SectionVisibility {
 
 export interface FeatureToggles {
   // Feature Modules
+  enableFloatingNav?: boolean;
+  enableCalendar?: boolean;
   enableRsvp?: boolean;
   enableMoney?: boolean;
   enableGift?: boolean;
@@ -81,8 +83,19 @@ export interface PageElementStyle {
   fontWeight?: string;
   textAlign?: 'left' | 'center' | 'right';
   color?: string;
+  backgroundColor?: string;
+  borderColor?: string;
+  borderRadius?: string;
   letterSpacing?: string;
   lineHeight?: string;
+  marginTop?: string;
+  marginBottom?: string;
+  marginLeft?: string;
+  marginRight?: string;
+  paddingTop?: string;
+  paddingBottom?: string;
+  paddingLeft?: string;
+  paddingRight?: string;
 }
 
 export interface SectionStyle {
@@ -99,6 +112,7 @@ export interface SectionStyle {
   headingStyle?: PageElementStyle;
   bodyStyle?: PageElementStyle;
   accentStyle?: PageElementStyle;
+  elements?: Record<string, PageElementStyle>;
 }
 
 export interface PageStyles {
@@ -110,6 +124,27 @@ export interface PageStyles {
   gallery?: SectionStyle;
   message?: SectionStyle;
   closing?: SectionStyle;
+}
+
+export function getElementStyle(
+  sectionStyle?: SectionStyle,
+  elementKey?: string,
+  categoryFallback?: 'headingStyle' | 'bodyStyle' | 'accentStyle'
+): React.CSSProperties {
+  if (!sectionStyle) return {};
+  const elStyle = elementKey ? sectionStyle.elements?.[elementKey] : undefined;
+  const categoryStyle = categoryFallback ? sectionStyle[categoryFallback] : undefined;
+
+  const fontFamily = elStyle?.fontFamily || categoryStyle?.fontFamily;
+  const color = elStyle?.color || categoryStyle?.color;
+  const fontSize = elStyle?.fontSize || categoryStyle?.fontSize;
+
+  const styleObj: React.CSSProperties = {};
+  if (fontFamily) styleObj.fontFamily = `'${fontFamily}', sans-serif`;
+  if (color) styleObj.color = color;
+  if (fontSize) styleObj.fontSize = fontSize;
+
+  return styleObj;
 }
 
 export interface WeddingConfig {

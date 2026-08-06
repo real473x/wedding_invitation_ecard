@@ -167,9 +167,24 @@ body {
   --adaptive-accent: #1B4332;
 }
 
-/* ── Typography ── */
-h1, h2, h3 { font-family: var(--font-heading); line-height: 1.2; }
-.font-script { font-family: var(--font-script); }
+.section-scroll-target {
+  --color-text: var(--heading-color, var(--custom-heading-color, var(--adaptive-text)));
+  --color-text-muted: var(--body-color, var(--custom-body-color, var(--adaptive-text-muted)));
+  --color-primary: var(--accent-color, var(--custom-accent-color, var(--adaptive-accent)));
+}
+
+/* ── Typography Cascading Overrides ── */
+h1, h2, h3 {
+  font-family: var(--font-heading);
+  line-height: 1.2;
+  color: var(--heading-color, var(--custom-heading-color, inherit));
+  font-size: var(--section-heading-size, var(--custom-heading-size, inherit));
+}
+.font-script {
+  font-family: var(--font-script);
+  color: var(--accent-color, var(--custom-accent-color, inherit));
+  font-size: var(--section-accent-size, var(--custom-accent-size, inherit));
+}
 
 /* ── Gold ornamental divider ── */
 .ornament-divider {

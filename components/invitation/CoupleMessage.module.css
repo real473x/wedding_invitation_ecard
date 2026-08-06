@@ -16,7 +16,7 @@
   .section {
     padding: 2.5rem 1.25rem calc(12dvh + env(safe-area-inset-bottom, 0px)) !important;
   }
-  .title { font-size: 2.3rem !important; }
-  .message { font-size: 1.08rem !important; line-height: 2; }
-  .signature { font-size: 1.5rem !important; }
+  .title { font-size: 2.3rem; }
+  .message { font-size: 1.08rem; line-height: 2; }
+  .signature { font-size: 1.5rem; }
 }

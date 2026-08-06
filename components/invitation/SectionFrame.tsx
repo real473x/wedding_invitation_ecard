@@ -25,8 +25,17 @@ export default function SectionFrame({
   const [hoverTransition, setHoverTransition] = useState<string | null>(null);
   const [hoverBorderStyle, setHoverBorderStyle] = useState<string | null>(null);
   const [hoverHeadingFont, setHoverHeadingFont] = useState<string | null>(null);
+  const [hoverHeadingColor, setHoverHeadingColor] = useState<string | null>(null);
+  const [hoverHeadingSize, setHoverHeadingSize] = useState<string | null>(null);
+
   const [hoverBodyFont, setHoverBodyFont] = useState<string | null>(null);
+  const [hoverBodyColor, setHoverBodyColor] = useState<string | null>(null);
+  const [hoverBodySize, setHoverBodySize] = useState<string | null>(null);
+
   const [hoverAccentFont, setHoverAccentFont] = useState<string | null>(null);
+  const [hoverAccentColor, setHoverAccentColor] = useState<string | null>(null);
+  const [hoverAccentSize, setHoverAccentSize] = useState<string | null>(null);
+
   const [hoverOverlayOpacity, setHoverOverlayOpacity] = useState<number | null>(null);
   const [hoverOverlayColor, setHoverOverlayColor] = useState<string | null>(null);
 
@@ -77,8 +86,17 @@ export default function SectionFrame({
           }
           if (e.data.borderStyle !== undefined) setHoverBorderStyle(e.data.borderStyle);
           if (e.data.headingFont !== undefined) setHoverHeadingFont(e.data.headingFont);
+          if (e.data.headingColor !== undefined) setHoverHeadingColor(e.data.headingColor);
+          if (e.data.headingSize !== undefined) setHoverHeadingSize(e.data.headingSize);
+
           if (e.data.bodyFont !== undefined) setHoverBodyFont(e.data.bodyFont);
+          if (e.data.bodyColor !== undefined) setHoverBodyColor(e.data.bodyColor);
+          if (e.data.bodySize !== undefined) setHoverBodySize(e.data.bodySize);
+
           if (e.data.accentFont !== undefined) setHoverAccentFont(e.data.accentFont);
+          if (e.data.accentColor !== undefined) setHoverAccentColor(e.data.accentColor);
+          if (e.data.accentSize !== undefined) setHoverAccentSize(e.data.accentSize);
+
           if (e.data.overlayOpacity !== undefined) setHoverOverlayOpacity(e.data.overlayOpacity);
           if (e.data.overlayColor !== undefined) setHoverOverlayColor(e.data.overlayColor);
         }
@@ -86,8 +104,14 @@ export default function SectionFrame({
         setHoverTransition(null);
         setHoverBorderStyle(null);
         setHoverHeadingFont(null);
+        setHoverHeadingColor(null);
+        setHoverHeadingSize(null);
         setHoverBodyFont(null);
+        setHoverBodyColor(null);
+        setHoverBodySize(null);
         setHoverAccentFont(null);
+        setHoverAccentColor(null);
+        setHoverAccentSize(null);
         setHoverOverlayOpacity(null);
         setHoverOverlayColor(null);
       }
@@ -105,26 +129,54 @@ export default function SectionFrame({
   const customCssVars: Record<string, string> = {};
 
   const effectiveHeadingFont = hoverHeadingFont !== null ? hoverHeadingFont : sectionStyle?.headingStyle?.fontFamily;
+  const effectiveHeadingColor = hoverHeadingColor !== null ? hoverHeadingColor : sectionStyle?.headingStyle?.color;
+  const effectiveHeadingSize = hoverHeadingSize !== null ? hoverHeadingSize : sectionStyle?.headingStyle?.fontSize;
+
   const effectiveBodyFont = hoverBodyFont !== null ? hoverBodyFont : sectionStyle?.bodyStyle?.fontFamily;
+  const effectiveBodyColor = hoverBodyColor !== null ? hoverBodyColor : sectionStyle?.bodyStyle?.color;
+  const effectiveBodySize = hoverBodySize !== null ? hoverBodySize : sectionStyle?.bodyStyle?.fontSize;
+
   const effectiveAccentFont = hoverAccentFont !== null ? hoverAccentFont : sectionStyle?.accentStyle?.fontFamily;
+  const effectiveAccentColor = hoverAccentColor !== null ? hoverAccentColor : sectionStyle?.accentStyle?.color;
+  const effectiveAccentSize = hoverAccentSize !== null ? hoverAccentSize : sectionStyle?.accentStyle?.fontSize;
 
   if (effectiveHeadingFont) {
     customCssVars['--font-heading'] = `'${effectiveHeadingFont}', serif`;
   }
-  if (sectionStyle?.headingStyle?.color) {
-    customCssVars['--adaptive-text'] = sectionStyle.headingStyle.color;
+  if (effectiveHeadingColor) {
+    customCssVars['--adaptive-text'] = effectiveHeadingColor;
+    customCssVars['--heading-color'] = effectiveHeadingColor;
   }
-  if (sectionStyle?.headingStyle?.fontSize) {
-    customCssVars['--section-heading-size'] = sectionStyle.headingStyle.fontSize;
+  if (effectiveHeadingSize) {
+    const formatted = typeof effectiveHeadingSize === 'number' ? `${effectiveHeadingSize}px` : (effectiveHeadingSize && !isNaN(Number(effectiveHeadingSize)) ? `${effectiveHeadingSize}px` : effectiveHeadingSize);
+    customCssVars['--section-heading-size'] = formatted;
+    customCssVars['--heading-size'] = formatted;
   }
+
   if (effectiveBodyFont) {
     customCssVars['--font-body'] = `'${effectiveBodyFont}', sans-serif`;
   }
-  if (sectionStyle?.bodyStyle?.color) {
-    customCssVars['--adaptive-text-muted'] = sectionStyle.bodyStyle.color;
+  if (effectiveBodyColor) {
+    customCssVars['--adaptive-text-muted'] = effectiveBodyColor;
+    customCssVars['--body-color'] = effectiveBodyColor;
   }
+  if (effectiveBodySize) {
+    const formatted = typeof effectiveBodySize === 'number' ? `${effectiveBodySize}px` : (effectiveBodySize && !isNaN(Number(effectiveBodySize)) ? `${effectiveBodySize}px` : effectiveBodySize);
+    customCssVars['--section-body-size'] = formatted;
+    customCssVars['--body-size'] = formatted;
+  }
+
   if (effectiveAccentFont) {
     customCssVars['--font-script'] = `'${effectiveAccentFont}', cursive`;
+  }
+  if (effectiveAccentColor) {
+    customCssVars['--adaptive-accent'] = effectiveAccentColor;
+    customCssVars['--accent-color'] = effectiveAccentColor;
+  }
+  if (effectiveAccentSize) {
+    const formatted = typeof effectiveAccentSize === 'number' ? `${effectiveAccentSize}px` : (effectiveAccentSize && !isNaN(Number(effectiveAccentSize)) ? `${effectiveAccentSize}px` : effectiveAccentSize);
+    customCssVars['--section-accent-size'] = formatted;
+    customCssVars['--accent-size'] = formatted;
   }
 
   // Overlay opacity and color

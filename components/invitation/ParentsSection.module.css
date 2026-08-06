@@ -3,7 +3,7 @@
 .topLine, .bottomLine { width: 100%; color: rgba(255,255,255,.5); }
 .topLine::before, .topLine::after, .bottomLine::before, .bottomLine::after { background: linear-gradient(to right, transparent, rgba(255,255,255,.3), transparent); }
 .syukur {
-  font-size: clamp(1.8rem, 6.5vw, 2.3rem);
+  font-size: var(--section-heading-size, clamp(1.8rem, 6.5vw, 2.3rem));
   color: var(--adaptive-accent, var(--color-accent-light));
   font-weight: 700;
   margin-bottom: 0.25rem;
@@ -13,27 +13,27 @@
 .parents { display: flex; gap: 1rem; align-items: flex-start; justify-content: center; width: 100%; }
 @media(max-width:400px){ .parents { flex-direction: column; align-items: center; } }
 .parentCouple { display: flex; flex-direction: column; align-items: center; gap: 0.2rem; flex: 1; }
-.parentRole { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--adaptive-text-muted, rgba(255,255,255,.4)); white-space: nowrap; }
-.parentNames { font-family: var(--font-heading); font-size: clamp(0.95rem, 3.5vw, 1.2rem); color: var(--adaptive-text, #FFF8E7); font-weight: 600; }
-.parentAnd { font-family: var(--font-script); color: var(--adaptive-accent, var(--color-accent-light)); font-size: 1.1rem; }
+.parentRole { font-size: var(--section-body-size, 0.65rem); text-transform: uppercase; letter-spacing: 0.05em; color: var(--adaptive-text-muted, rgba(255,255,255,.4)); white-space: nowrap; }
+.parentNames { font-family: var(--font-heading); font-size: var(--section-heading-size, clamp(0.95rem, 3.5vw, 1.2rem)); color: var(--adaptive-text, #FFF8E7); font-weight: 600; }
+.parentAnd { font-family: var(--font-script); color: var(--adaptive-accent, var(--color-accent-light)); font-size: var(--section-accent-size, 1.1rem); }
 .dividerVert { width: 1px; min-height: 80px; background: linear-gradient(to bottom, transparent, rgba(255,255,255,.2), transparent); align-self: center; flex-shrink: 0; }
-.inviteText { color: var(--adaptive-text-muted, rgba(255,255,255,.65)); font-size: clamp(0.85rem, 3vw, 0.95rem); line-height: 2; }
-.inviteTitle { color: var(--adaptive-accent, var(--color-accent-light)); font-size: clamp(0.75rem, 2.5vw, 0.85rem); letter-spacing: 0.03em; }
+.inviteText { color: var(--adaptive-text-muted, rgba(255,255,255,.65)); font-size: var(--section-body-size, clamp(0.85rem, 3vw, 0.95rem)); line-height: 2; }
+.inviteTitle { color: var(--adaptive-accent, var(--color-accent-light)); font-size: var(--section-accent-size, clamp(0.75rem, 2.5vw, 0.85rem)); letter-spacing: 0.03em; }
 .coupleNames { display: flex; flex-direction: column; align-items: center; gap: 0.1rem; }
-.coupleNames h2 { font-family: var(--font-heading); font-size: clamp(1.4rem, 5.5vw, 2rem); color: var(--adaptive-text, #fff); font-weight: 700; margin: 0; }
-.amp { font-size: clamp(1.6rem, 6vw, 2.2rem); color: var(--adaptive-accent, var(--color-accent-light)); line-height: 1; }
+.coupleNames h2 { font-family: var(--font-heading); font-size: var(--section-heading-size, clamp(1.4rem, 5.5vw, 2rem)); color: var(--adaptive-text, #fff); font-weight: 700; margin: 0; }
+.amp { font-size: var(--section-accent-size, clamp(1.6rem, 6vw, 2.2rem)); color: var(--adaptive-accent, var(--color-accent-light)); line-height: 1; }
 
 @media(max-width:600px){
   .section { padding-top: 0.5rem !important; }
   .parents { flex-direction: column; align-items: center; gap: 0.75rem; }
   .dividerVert { display: none; }
   .card { gap: 0.75rem; }
-  .syukur { font-size: 1.8rem !important; line-height: 1.1 !important; }
-  .parentNames { font-size: 1.15rem !important; }
-  .inviteText { font-size: 0.9rem !important; line-height: 1.7; }
+  .syukur { font-size: 1.8rem; line-height: 1.1; }
+  .parentNames { font-size: 1.15rem; }
+  .inviteText { font-size: 0.9rem; line-height: 1.7; }
   .coupleNames { flex-direction: row; align-items: center; gap: 0.5rem; }
-  .coupleNames h2 { font-size: 1.3rem !important; }
-  .amp { font-size: 1.4rem !important; }
+  .coupleNames h2 { font-size: 1.3rem; }
+  .amp { font-size: 1.4rem; }
 }
 
 

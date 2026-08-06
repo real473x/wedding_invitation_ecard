@@ -22,9 +22,11 @@ export default function FloatingNav({ config, coupleId, visible, onUpdateGifts, 
   const t = getInvitationText(currentLang, textOverrides);
 
   const ft = config.featureToggles || {};
+  if (ft.enableFloatingNav === false) return null;
+
   const NAV_ITEMS = [
     { key: 'rsvp',     icon: <RsvpIcon />,     label: t.navRsvp,     enabled: ft.enableRsvp !== false },
-    { key: 'calendar', icon: <CalIcon />,       label: t.navCalendar, enabled: true },
+    { key: 'calendar', icon: <CalIcon />,       label: t.navCalendar, enabled: ft.enableCalendar !== false },
     { key: 'contact',  icon: <PhoneIcon />,     label: t.navContact,  enabled: ft.enableContact !== false },
     { key: 'location', icon: <PinIcon />,       label: t.navLocation, enabled: ft.enableLocation !== false },
     { key: 'money',    icon: <MoneyIcon />,    label: t.navMoney,    enabled: ft.enableMoney !== false },

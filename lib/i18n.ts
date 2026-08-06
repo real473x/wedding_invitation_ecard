@@ -222,7 +222,7 @@ export const ADMIN_DICT = {
     pkg_6month: '6 Bulan',
     pkg_1year: '1 Tahun',
     pkg_unlimited: 'Unlimited (Selamanya)',
-    pkg_custom: 'Custom (Hari Kustom)',
+    pkg_custom: 'Custom (Custom Days)',
 
     // Add Couple Modal
     addCoupleModalTitle: '➕ Tambah Pasangan Baru',
@@ -767,120 +767,15 @@ export const ADMIN_DICT = {
 export const INVITATION_DICT = {
   ms: {
     // Gate
-    openInvitation: 'Buka Jemputan',
-    walimatulurus: 'Walimatulurus',
-    dearGuest: 'Kepada YBhg. Dato\'/Datin/Tuan/Puan/Encik/Cik:',
-
-    // Hero
-    celebratingLove: 'Meraikan Cinta',
-    saveTheDate: 'Simpan Tarikh Ini',
-    heroDateLabel: 'Tarikh',
-    heroVenueLabel: 'Tempat Majlis',
-
-    // Parents
-    cordialInvitation: 'Undangan Mesra',
-    parentsInviting: 'Dengan Penuh Kesyukuran Kami',
-    inviteSentence: 'Menjemput Dato\' / Datin / Tuan / Puan / Encik / Cik ke majlis perkahwinan anakanda kami',
-    parentsRoleGroom: 'Keluarga Pengantin Lelaki',
-    parentsRoleBride: 'Keluarga Pengantin Perempuan',
-    parentsInviteLine1: 'Menjemput',
-    parentsInviteLine2: 'Dato\' / Datin / Tuan / Puan / Encik / Cik',
-    parentsInviteLine3: 'ke Majlis Perkahwinan Anak Kami',
-
-    // Countdown
-    countdownTitle: 'Kiraan Mundur Majlis',
-    days: 'Hari',
-    hours: 'Jam',
-    minutes: 'Minit',
-    seconds: 'Saat',
-    addToCalendar: '📅 Tambah ke Kalendar',
-    countdownEventPassed: 'Majlis telah berlangsung!',
-
-    // Programme
-    eventSchedule: 'Aturcara Majlis',
-
-    // Gallery & Wishes
-    galleryTitle: 'Galeri Kenangan',
-    wishesTitle: 'Ucapan & Doa Restu',
-    sendWish: '✏️ Hantar Ucapan',
-    yourName: 'Nama Anda',
-    yourWish: 'Tuliskan ucapan & doa restu...',
-    submitWish: 'Hantar Ucapan',
-    sending: 'Menghantar...',
-    galleryNoWishes: 'Tiada ucapan lagi. Jadilah yang pertama! 💌',
-    galleryWishThanks: 'Terima kasih atas ucapan anda!',
-    galleryWishNamePlaceholder: 'Nama...',
-    galleryWishLabel: 'Ucapan / Doa',
-
-    // Couple Message
-    fromUs: 'Dari Kami Berdua',
-
-    // Closing
-    thankYou: 'Terima Kasih',
-
-    // Floating Nav & Popups
-    navRsvp: 'RSVP',
-    navCalendar: 'Kalendar',
-    navContact: 'Hubungi',
-    navLocation: 'Lokasi',
-    navMoney: 'Sumbangan',
-    navGift: 'Hadiah',
-
-    // Popups
-    rsvpHeader: '📨 Pengesahan Kehadiran (RSVP)',
-    rsvpAttendance: 'Adakah anda akan hadir?',
-    attendingYes: 'Ya, Saya Akan Hadir',
-    attendingNo: 'Maaf, Tidak Dapat Hadir',
-    paxCount: 'Jumlah Jangkaan Tetamu (Pax)',
-    submitRsvp: 'Hantar RSVP',
-
-    calendarHeader: '📅 Simpan Tarikh',
-    googleCalendar: 'Google Calendar',
-    appleCalendar: 'Apple / Outlook Calendar',
-
-    contactHeader: '📞 Hubungi Keluarga',
-    call: 'Telefon',
-    whatsapp: 'WhatsApp',
-
-    locationHeader: '📍 Lokasi Majlis',
-    openWaze: 'Waze',
-    openGoogleMaps: 'Google Maps',
-
-    moneyHeader: '💰 Sumbangan Ikhlas',
-    bankAccount: 'Akaun Bank',
-    accountNo: 'Nombor Akaun',
-    copyAccountNo: '📋 Salin No Akaun',
-    copied: '✅ Disalin!',
-
-    giftHeader: '🎁 Senarai Hadiah',
-    suggestGift: '＋ Cadang Hadiah Baru',
-    buyLink: 'Beli ↗',
-    claimedBy: 'Dituntut oleh',
-    giftName: 'Nama Hadiah',
-    shopLink: 'Link Kedai',
-    fetchImage: '🔄 Dapatkan Gambar',
-    fetchPrice: '🔄 Harga',
-    priceLabel: 'Harga',
-    uploadImage: '📁 Pilih Fail Gambar',
-    submitGift: 'Hantar Cadangan',
-    copyAccountNoTooltip: 'Salin No. Akaun',
-    viewLargeImageTooltip: 'Klik untuk papar gambar besar',
-    configSearchTooltip: 'Konfigurasi Carian',
-    configPriceSearchTooltip: 'Konfigurasi Carian Harga',
-    toggleYoutubePlayerTooltip: 'Sembunyikan / Papar Pemain YouTube',
-    bgMusicTitle: 'Muzik Latar',
-  },
-  en: {
-    // Gate
     openInvitation: 'Open Invitation',
-    walimatulurus: 'Wedding Ceremony',
+    walimatulurus: 'Wedding Invitation',
     dearGuest: 'Dear Valued Guest:',
 
     // Hero
     celebratingLove: 'Celebrating Love',
     saveTheDate: 'Save The Date',
-    heroDateLabel: 'Date',
-    heroVenueLabel: 'Venue',
+    heroDateLabel: 'EVENT DATE',
+    heroVenueLabel: 'VENUE LOCATION',
 
     // Parents
     cordialInvitation: 'Cordial Invitation',
@@ -888,9 +783,9 @@ export const INVITATION_DICT = {
     inviteSentence: 'Warmly invite you to celebrate the wedding of our beloved children',
     parentsRoleGroom: 'Groom\'s Family',
     parentsRoleBride: 'Bride\'s Family',
-    parentsInviteLine1: 'Warmly invite you',
+    parentsInviteLine1: 'Warmly Invite',
     parentsInviteLine2: 'Our Valued Guests',
-    parentsInviteLine3: 'to celebrate the wedding of our children',
+    parentsInviteLine3: 'To The Wedding Reception Of Our Children',
 
     // Countdown
     countdownTitle: 'Event Countdown',
@@ -912,10 +807,10 @@ export const INVITATION_DICT = {
     yourWish: 'Write your blessings & warm wishes...',
     submitWish: 'Send Wish',
     sending: 'Sending...',
-    galleryNoWishes: 'No wishes yet. Be the first! 💌',
+    galleryNoWishes: 'No wishes yet. Be the first to leave a wish! 💌',
     galleryWishThanks: 'Thank you for your warm wish!',
-    galleryWishNamePlaceholder: 'Your name...',
-    galleryWishLabel: 'Wish / Blessing',
+    galleryWishNamePlaceholder: 'Enter your name...',
+    galleryWishLabel: 'Wish / Blessing Message',
 
     // Couple Message
     fromUs: 'From Both of Us',
@@ -943,36 +838,141 @@ export const INVITATION_DICT = {
     googleCalendar: 'Google Calendar',
     appleCalendar: 'Apple / Outlook Calendar',
 
-    contactHeader: '📞 Contact Family',
+    contactHeader: '📞 Family Contact',
     call: 'Call',
     whatsapp: 'WhatsApp',
 
     locationHeader: '📍 Event Location',
-    openWaze: 'Waze',
-    openGoogleMaps: 'Google Maps',
+    openWaze: 'Open Waze',
+    openGoogleMaps: 'Open Google Maps',
 
-    moneyHeader: '💰 Cash Contribution',
+    moneyHeader: '💰 Cash Gift Contribution',
     bankAccount: 'Bank Account',
     accountNo: 'Account Number',
     copyAccountNo: '📋 Copy Account No',
-    copied: '✅ Copied!',
+    copied: '✅ Copied to Clipboard!',
 
-    giftHeader: '🎁 Gift Registry',
+    giftHeader: '🎁 Gift Registry & Wishlist',
     suggestGift: '＋ Suggest New Gift',
-    buyLink: 'Buy ↗',
+    buyLink: 'Buy Online ↗',
     claimedBy: 'Claimed by',
     giftName: 'Gift Name',
-    shopLink: 'Store Link',
-    fetchImage: '🔄 Get Image',
-    fetchPrice: '🔄 Price',
+    shopLink: 'Store Link URL',
+    fetchImage: '🔄 Fetch Image',
+    fetchPrice: '🔄 Fetch Price',
     priceLabel: 'Price',
     uploadImage: '📁 Upload Image File',
     submitGift: 'Submit Gift',
-    copyAccountNoTooltip: 'Copy Account Number',
-    viewLargeImageTooltip: 'Click to view large image',
-    configSearchTooltip: 'Search Configuration',
+    copyAccountNoTooltip: 'Copy Account Number to Clipboard',
+    viewLargeImageTooltip: 'Click to view full image',
+    configSearchTooltip: 'Configure Search',
     configPriceSearchTooltip: 'Configure Price Search',
-    toggleYoutubePlayerTooltip: 'Hide / Show YouTube Player',
+    toggleYoutubePlayerTooltip: 'Toggle YouTube Audio Player',
+    bgMusicTitle: 'Background Music',
+  },
+  en: {
+    // Gate
+    openInvitation: 'Open Invitation',
+    walimatulurus: 'Wedding Invitation',
+    dearGuest: 'Dear Valued Guest:',
+
+    // Hero
+    celebratingLove: 'Celebrating Love',
+    saveTheDate: 'Save The Date',
+    heroDateLabel: 'EVENT DATE',
+    heroVenueLabel: 'VENUE LOCATION',
+
+    // Parents
+    cordialInvitation: 'Cordial Invitation',
+    parentsInviting: 'With Joy and Gratitude, We',
+    inviteSentence: 'Warmly invite you to celebrate the wedding of our beloved children',
+    parentsRoleGroom: 'Groom\'s Family',
+    parentsRoleBride: 'Bride\'s Family',
+    parentsInviteLine1: 'Warmly Invite',
+    parentsInviteLine2: 'Our Valued Guests',
+    parentsInviteLine3: 'To The Wedding Reception Of Our Children',
+
+    // Countdown
+    countdownTitle: 'Event Countdown',
+    days: 'Days',
+    hours: 'Hours',
+    minutes: 'Minutes',
+    seconds: 'Seconds',
+    addToCalendar: '📅 Add to Calendar',
+    countdownEventPassed: 'The event has taken place!',
+
+    // Programme
+    eventSchedule: 'Event Schedule',
+
+    // Gallery & Wishes
+    galleryTitle: 'Photo Gallery',
+    wishesTitle: 'Wishes & Blessings',
+    sendWish: '✏️ Send a Wish',
+    yourName: 'Your Name',
+    yourWish: 'Write your blessings & warm wishes...',
+    submitWish: 'Send Wish',
+    sending: 'Sending...',
+    galleryNoWishes: 'No wishes yet. Be the first to leave a wish! 💌',
+    galleryWishThanks: 'Thank you for your warm wish!',
+    galleryWishNamePlaceholder: 'Enter your name...',
+    galleryWishLabel: 'Wish / Blessing Message',
+
+    // Couple Message
+    fromUs: 'From Both of Us',
+
+    // Closing
+    thankYou: 'Thank You',
+
+    // Floating Nav & Popups
+    navRsvp: 'RSVP',
+    navCalendar: 'Calendar',
+    navContact: 'Contact',
+    navLocation: 'Location',
+    navMoney: 'Cash Gift',
+    navGift: 'Gifts',
+
+    // Popups
+    rsvpHeader: '📨 Attendance RSVP',
+    rsvpAttendance: 'Will you be attending?',
+    attendingYes: 'Yes, I Will Attend',
+    attendingNo: 'Sorry, Unable to Attend',
+    paxCount: 'Number of Guests (Pax)',
+    submitRsvp: 'Submit RSVP',
+
+    calendarHeader: '📅 Save The Date',
+    googleCalendar: 'Google Calendar',
+    appleCalendar: 'Apple / Outlook Calendar',
+
+    contactHeader: '📞 Family Contact',
+    call: 'Call',
+    whatsapp: 'WhatsApp',
+
+    locationHeader: '📍 Event Location',
+    openWaze: 'Open Waze',
+    openGoogleMaps: 'Open Google Maps',
+
+    moneyHeader: '💰 Cash Gift Contribution',
+    bankAccount: 'Bank Account',
+    accountNo: 'Account Number',
+    copyAccountNo: '📋 Copy Account No',
+    copied: '✅ Copied to Clipboard!',
+
+    giftHeader: '🎁 Gift Registry & Wishlist',
+    suggestGift: '＋ Suggest New Gift',
+    buyLink: 'Buy Online ↗',
+    claimedBy: 'Claimed by',
+    giftName: 'Gift Name',
+    shopLink: 'Store Link URL',
+    fetchImage: '🔄 Fetch Image',
+    fetchPrice: '🔄 Fetch Price',
+    priceLabel: 'Price',
+    uploadImage: '📁 Upload Image File',
+    submitGift: 'Submit Gift',
+    copyAccountNoTooltip: 'Copy Account Number to Clipboard',
+    viewLargeImageTooltip: 'Click to view full image',
+    configSearchTooltip: 'Configure Search',
+    configPriceSearchTooltip: 'Configure Price Search',
+    toggleYoutubePlayerTooltip: 'Toggle YouTube Audio Player',
     bgMusicTitle: 'Background Music',
   }
 } as const;

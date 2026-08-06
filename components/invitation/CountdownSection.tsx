@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { WeddingConfig } from '@/lib/db';
+import { getElementStyle } from '@/lib/element-styles';
 import styles from './CountdownSection.module.css';
 
 function useCountdown(targetDate: string) {
@@ -36,14 +37,15 @@ export default function CountdownSection({ config, style, lang, textOverrides }:
   const dayNum = dateObj ? dateObj.getDate() : '';
   const monthName = dateObj ? dateObj.toLocaleDateString(currentLang === 'en' ? 'en-US' : 'ms-MY', { month: 'long' }) : '';
   const yearNum = dateObj ? dateObj.getFullYear() : '';
+  const secStyle = config.pageStyles?.countdown;
 
   return (
     <section className={`invitation-section ${styles.section}`} style={style}>
       <div className={styles.container}>
-        <p className={`font-script ${styles.sectionLabel}`}>{t.countdownTitle}</p>
+        <p className={`font-script ${styles.sectionLabel}`} style={getElementStyle(secStyle, 'countdownTitle', 'headingStyle')}>{t.countdownTitle}</p>
 
         {/* Calendar Card */}
-        <div className={styles.calCard}>
+        <div className={styles.calCard} style={getElementStyle(secStyle, 'countdownCalendarCard', 'headingStyle')}>
           <div className={styles.calHeader}>{config.weddingDay}</div>
           <div className={styles.calBody}>
             <span className={styles.calDay}>{dayNum}</span>
@@ -63,28 +65,28 @@ export default function CountdownSection({ config, style, lang, textOverrides }:
               { val: countdown.seconds, label: t.seconds },
             ].map(({ val, label }) => (
               <div key={label} className={styles.unit}>
-                <span className={styles.num}>{String(val).padStart(2, '0')}</span>
-                <span className={styles.label}>{label}</span>
+                <span className={styles.num} style={getElementStyle(secStyle, 'countdownCircles', 'headingStyle')}>{String(val).padStart(2, '0')}</span>
+                <span className={styles.label} style={getElementStyle(secStyle, 'countdownLabels', 'bodyStyle')}>{label}</span>
               </div>
             ))}
           </div>
         )}
 
         {/* Event details */}
-        <div className={styles.details}>
+        <div className={styles.details} style={getElementStyle(secStyle, 'countdownEventDetailsCard', 'headingStyle')}>
           <div className={styles.detailRow}>
             <span className={styles.detailIcon}>🕐</span>
             <div>
-              <span className={styles.detailLabel}>Masa</span>
-              <span className={styles.detailValue}>{config.weddingTime}</span>
+              <span className={styles.detailLabel} style={getElementStyle(secStyle, 'countdownDetailLabel', 'bodyStyle')}>Masa</span>
+              <span className={styles.detailValue} style={getElementStyle(secStyle, 'countdownDetailValue', 'headingStyle')}>{config.weddingTime}</span>
             </div>
           </div>
           <div className={styles.detailRow}>
             <span className={styles.detailIcon}>📍</span>
             <div>
-              <span className={styles.detailLabel}>Tempat</span>
-              <span className={styles.detailValue}>{config.venue}</span>
-              <span className={styles.detailSub}>{config.venueAddress}</span>
+              <span className={styles.detailLabel} style={getElementStyle(secStyle, 'countdownDetailLabel', 'bodyStyle')}>Tempat</span>
+              <span className={styles.detailValue} style={getElementStyle(secStyle, 'countdownDetailValue', 'headingStyle')}>{config.venue}</span>
+              <span className={styles.detailSub} style={getElementStyle(secStyle, 'countdownDetailSub', 'bodyStyle')}>{config.venueAddress}</span>
             </div>
           </div>
         </div>

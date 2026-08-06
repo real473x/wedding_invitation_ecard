@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { WeddingConfig } from '@/lib/db';
+import { getElementStyle } from '@/lib/element-styles';
 import styles from './ClosingScreen.module.css';
 import AdaptiveTextSection from './AdaptiveTextSection';
 
@@ -36,11 +37,12 @@ export default function ClosingScreen({ config, style, lang, textOverrides }: { 
   const [isMusicExpanded, setIsMusicExpanded] = useState(false);
   const rawUrl = config.youtubeUrl;
   const embedUrl = getYouTubeEmbedUrl(rawUrl);
+  const secStyle = config.pageStyles?.closing;
 
   return (
     <AdaptiveTextSection className={`invitation-section ${styles.section}`} style={style}>
       <div className={styles.container}>
-        <p className={`font-script ${styles.title}`}>{config.closingTitle}</p>
+        <p className={`font-script ${styles.title}`} style={getElementStyle(secStyle, 'closingTitle', 'headingStyle')}>{config.closingTitle}</p>
         <div className={styles.heartAnim}>❤️</div>
         <div className={`ornament-divider ${styles.orn}`}><span></span></div>
 
@@ -58,16 +60,16 @@ export default function ClosingScreen({ config, style, lang, textOverrides }: { 
           </div>
         )}
 
-        <p className={styles.text}>{config.closingText}</p>
+        <p className={styles.text} style={getElementStyle(secStyle, 'closingText', 'bodyStyle')}>{config.closingText}</p>
 
         <div className={styles.signatures}>
           <div className={styles.sigCouple}>
-            <span className={`font-script ${styles.sigName}`}>{config.groomName}</span>
+            <span className={`font-script ${styles.sigName}`} style={getElementStyle(secStyle, 'sigGroom', 'accentStyle')}>{config.groomName}</span>
             <div className={styles.sigLine} />
           </div>
           <div className={styles.sigHeart}>💍</div>
           <div className={styles.sigCouple}>
-            <span className={`font-script ${styles.sigName}`}>{config.brideName}</span>
+            <span className={`font-script ${styles.sigName}`} style={getElementStyle(secStyle, 'sigBride', 'accentStyle')}>{config.brideName}</span>
             <div className={styles.sigLine} />
           </div>
         </div>
