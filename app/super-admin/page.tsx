@@ -1295,15 +1295,22 @@ function EditCoupleModal({ couple, onClose, onUpdated, t }: { couple: CoupleRow;
 }
 
 function AccountModal({ onClose, onSuccess, t }: { onClose: () => void; onSuccess: () => void; t: Record<string, string> }) {
+  const [email, setEmail] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  useEffect(() => {
+    fetch('/api/super-admin/account').then(res => res.json()).then(data => {
+      if (data.email) setEmail(data.email);
+    }).catch(console.error);
+  }, []);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (newPassword !== confirmPassword) {
+    if (newPassword && newPassword !== confirmPassword) {
       setError(t.passMismatchError);
       return;
     }
@@ -1313,7 +1320,7 @@ function AccountModal({ onClose, onSuccess, t }: { onClose: () => void; onSucces
       const res = await fetch('/api/super-admin/account', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ currentPassword, newPassword }),
+        body: JSON.stringify({ currentPassword, newEmail: email, newPassword: newPassword || undefined }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -1337,6 +1344,18 @@ function AccountModal({ onClose, onSuccess, t }: { onClose: () => void; onSucces
         </div>
         <form onSubmit={handleSubmit} style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div className="form-group">
+            <label>{t.superAdminEmailLabel || 'E-mel Super Admin'}</label>
+            <input
+              type="email"
+              className="form-control"
+              placeholder={t.enterSuperAdminEmail || 'Masukkan e-mel super admin...'}
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="form-group">
             <label>{t.currPassLabel}</label>
             <input
               type="password"
@@ -1347,28 +1366,31 @@ function AccountModal({ onClose, onSuccess, t }: { onClose: () => void; onSucces
               required
             />
           </div>
+
           <div className="form-group">
-            <label>{t.newPassLabel}</label>
+            <label>{t.newPassLabel} ({t.optional || 'pilihan'})</label>
             <input
               type="password"
               className="form-control"
               placeholder={t.newPassPlaceholder}
               value={newPassword}
               onChange={e => setNewPassword(e.target.value)}
-              required
             />
           </div>
-          <div className="form-group">
-            <label>{t.confirmPassLabel}</label>
-            <input
-              type="password"
-              className="form-control"
-              placeholder={t.confirmPassPlaceholder}
-              value={confirmPassword}
-              onChange={e => setConfirmPassword(e.target.value)}
-              required
-            />
-          </div>
+
+          {newPassword && (
+            <div className="form-group">
+              <label>{t.confirmPassLabel}</label>
+              <input
+                type="password"
+                className="form-control"
+                placeholder={t.confirmPassPlaceholder}
+                value={confirmPassword}
+                onChange={e => setConfirmPassword(e.target.value)}
+                required={!!newPassword}
+              />
+            </div>
+          )}
 
           {error && <div style={{ color: '#e87c6f', fontSize: '0.85rem', background: 'rgba(192,57,43,.1)', padding: '0.65rem 0.9rem', borderRadius: '8px' }}>{error}</div>}
 
