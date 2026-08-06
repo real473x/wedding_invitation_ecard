@@ -17,17 +17,17 @@ export async function GET() {
 
   const db = readDb();
   return NextResponse.json({
-    email: db.superAdmin.email || '',
+    username: db.superAdmin.username || '',
   });
 }
 
-// PATCH /api/super-admin/account — Change super admin email / password
+// PATCH /api/super-admin/account — Change super admin username / password
 export async function PATCH(req: NextRequest) {
   const authErr = await requireSuperAdmin();
   if (authErr) return authErr;
 
   try {
-    const { currentPassword, newEmail, newPassword } = await req.json();
+    const { currentPassword, newUsername, newPassword } = await req.json();
     if (!currentPassword) {
       return NextResponse.json({ error: 'Sila isi kata laluan semasa untuk pengesahan.' }, { status: 400 });
     }
@@ -40,11 +40,11 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Kata laluan semasa tidak betul.' }, { status: 400 });
     }
 
-    if (newEmail) {
-      if (!newEmail.includes('@')) {
-        return NextResponse.json({ error: 'Sila masukkan e-mel yang sah.' }, { status: 400 });
+    if (newUsername) {
+      if (newUsername.trim().length < 3) {
+        return NextResponse.json({ error: 'Nama pengguna mestilah sekurang-kurangnya 3 aksara.' }, { status: 400 });
       }
-      db.superAdmin.email = newEmail.trim().toLowerCase();
+      db.superAdmin.username = newUsername.trim();
     }
 
     if (newPassword) {
@@ -56,7 +56,7 @@ export async function PATCH(req: NextRequest) {
 
     writeDb(db);
 
-    return NextResponse.json({ ok: true, email: db.superAdmin.email });
+    return NextResponse.json({ ok: true, username: db.superAdmin.username });
   } catch (err) {
     return NextResponse.json({ error: 'Ralat pelayan. Cuba semula.' }, { status: 500 });
   }

@@ -1295,7 +1295,7 @@ function EditCoupleModal({ couple, onClose, onUpdated, t }: { couple: CoupleRow;
 }
 
 function AccountModal({ onClose, onSuccess, t }: { onClose: () => void; onSuccess: () => void; t: Record<string, string> }) {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -1304,7 +1304,7 @@ function AccountModal({ onClose, onSuccess, t }: { onClose: () => void; onSucces
 
   useEffect(() => {
     fetch('/api/super-admin/account').then(res => res.json()).then(data => {
-      if (data.email) setEmail(data.email);
+      if (data.username) setUsername(data.username);
     }).catch(console.error);
   }, []);
 
@@ -1320,7 +1320,7 @@ function AccountModal({ onClose, onSuccess, t }: { onClose: () => void; onSucces
       const res = await fetch('/api/super-admin/account', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ currentPassword, newEmail: email, newPassword: newPassword || undefined }),
+        body: JSON.stringify({ currentPassword, newUsername: username, newPassword: newPassword || undefined }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -1344,13 +1344,13 @@ function AccountModal({ onClose, onSuccess, t }: { onClose: () => void; onSucces
         </div>
         <form onSubmit={handleSubmit} style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div className="form-group">
-            <label>{t.superAdminEmailLabel || 'E-mel Super Admin'}</label>
+            <label>{t.superAdminUsernameLabel || 'Nama Pengguna Super Admin'}</label>
             <input
-              type="email"
+              type="text"
               className="form-control"
-              placeholder={t.enterSuperAdminEmail || 'Masukkan e-mel super admin...'}
-              value={email}
-              onChange={e => setEmail(e.target.value)}
+              placeholder={t.enterSuperAdminUsername || 'Masukkan nama pengguna super admin...'}
+              value={username}
+              onChange={e => setUsername(e.target.value)}
               required
             />
           </div>
