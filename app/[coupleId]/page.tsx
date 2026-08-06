@@ -245,12 +245,18 @@ export default function InvitationPage({ params }: { params: Promise<{ coupleId:
     function handlePreviewMsg(e: MessageEvent) {
       if (!e.data || typeof e.data !== 'object') return;
       
-      if (e.data.type === 'PREVIEW_SELECT_SECTION') {
+      if (e.data.type === 'OPEN_GATE') {
+        handleGateOpen();
+      } else if (e.data.type === 'PREVIEW_SELECT_SECTION') {
         if (e.data.sectionId && e.data.sectionId !== 'gate') {
-          setGateOpen(true);
-          setGateClosing(true);
-          setGateUnmounted(true);
-          setShowNav(true);
+          if (!gateOpen) {
+            handleGateOpen();
+          } else {
+            setGateOpen(true);
+            setGateClosing(true);
+            setGateUnmounted(true);
+            setShowNav(true);
+          }
         }
         if (e.data.sectionId) {
           const el = document.getElementById(e.data.sectionId);
@@ -274,7 +280,7 @@ export default function InvitationPage({ params }: { params: Promise<{ coupleId:
     }
     window.addEventListener('message', handlePreviewMsg);
     return () => window.removeEventListener('message', handlePreviewMsg);
-  }, []);
+  }, [handleGateOpen, gateOpen]);
 
   function getSectionStyle(sectionKey: 'gate' | 'invitation' | 'parents' | 'countdown' | 'programme' | 'gallery' | 'message' | 'closing') {
     if (!config) return {};

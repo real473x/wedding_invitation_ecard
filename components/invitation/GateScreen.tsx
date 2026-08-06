@@ -56,7 +56,7 @@ export default function GateScreen({ config, onOpen, isOpen, isClosing, lang, te
             ? (textOverrides.gateDate || '') 
             : `${config.weddingDay}, ${config.weddingDate ? new Date(config.weddingDate + 'T00:00:00').toLocaleDateString(currentLang === 'en' ? 'en-US' : 'ms-MY', { day: 'numeric', month: 'long', year: 'numeric' }) : ''}`}
         </p>
-        <button className={`btn ${styles.openBtn}`} onClick={onOpen} aria-label={t.openInvitation} style={getElementStyle(secStyle, 'gateOpenBtn', 'headingStyle')}>
+        <button className={`btn ${styles.openBtn} open-invitation-btn`} onClick={onOpen} aria-label={t.openInvitation} style={getElementStyle(secStyle, 'gateOpenBtn', 'headingStyle')}>
           <span>{t.openInvitation}</span>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </button>

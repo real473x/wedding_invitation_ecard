@@ -29,6 +29,7 @@ function recorderMain(config: {
   showPhoneFrame: boolean;
   pageDurationMs: number;
   includeAudio: boolean;
+  autoSimulate: boolean;
   loginId: string;
   sections: { key: string; label: string }[];
 }) {
@@ -41,6 +42,7 @@ function recorderMain(config: {
   const downloadLink = $('rec-download') as HTMLAnchorElement;
   const errorEl = $('rec-error');
   const iframeEl = document.getElementById('rec-iframe') as HTMLIFrameElement;
+  const autoSimToggle = $('rec-auto-sim') as HTMLInputElement | null;
 
   let abort = false;
   let mediaRecorder: MediaRecorder | null = null;
@@ -82,11 +84,240 @@ function recorderMain(config: {
     errorEl.style.display = 'none';
     downloadWrap.style.display = 'none';
     startBtn.style.display = 'none';
-    stopBtn.style.display = 'inline-block';
     abort = false;
 
-    // STEP 1: Refresh website preview screen to reset to initial state
-    statusEl.textContent = config.lang === 'en' ? 'Refreshing preview page...' : 'Memuat semula halaman pratonton...';
+    // STEP 1: Hide recording controls panel (it's to the right of the phone frame)
+    // This keeps the phone frame visible as the only thing on screen to share
+    const controlsPanel = $('rec-controls');
+    const recWrap = $('rec-wrap');
+    if (controlsPanel) controlsPanel.style.display = 'none';
+    if (recWrap) recWrap.style.justifyContent = 'center';
+
+    // Inject HUD to the RIGHT of the phone frame — same position as the hidden controls panel.
+    // It will NOT appear in the captured video because it's outside the phone frame area.
+    const hud = document.createElement('div');
+    hud.id = 'rec-hud';
+    hud.style.cssText = `
+      position: fixed; right: 20px; top: 50%; transform: translateY(-50%);
+      background: rgba(15,17,23,0.95); backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.12); border-radius: 20px;
+      padding: 20px 18px; display: flex; flex-direction: column; align-items: stretch; gap: 14px;
+      z-index: 9999; font-family: system-ui; color: #fff; font-size: 13px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.7); width: 280px;
+    `;
+    hud.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:2px;">
+        <span style="display:inline-block;width:10px;height:10px;background:#ef4444;border-radius:50%;flex-shrink:0;animation:hudpulse 1s ease-in-out infinite;"></span>
+        <span style="font-weight:800;color:#C9A84C;font-size:14px;">🎬 Recording</span>
+      </div>
+      <span id="hud-status" style="font-weight:500;color:#d1d5db;font-size:12px;line-height:1.5;min-height:36px;">Initialising...</span>
+      <div>
+        <div style="font-size:11px;color:#6b7280;margin-bottom:5px;">Progress</div>
+        <div style="height:6px;width:100%;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden;">
+          <div id="hud-progress" style="height:100%;width:0%;background:linear-gradient(90deg,#C9A84C,#e8c46a);transition:width .4s;border-radius:3px;"></div>
+        </div>
+      </div>
+      <button id="hud-stop" style="background:#ef4444;color:#fff;border:none;border-radius:12px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;width:100%;">⏹ Stop Recording</button>
+    `;
+    const hudStyle = document.createElement('style');
+    hudStyle.textContent = '@keyframes hudpulse { 0%,100%{opacity:1} 50%{opacity:0.3} }';
+    document.head.appendChild(hudStyle);
+    document.body.appendChild(hud);
+
+    const hudStatus = document.getElementById('hud-status')!;
+    const hudProgress = document.getElementById('hud-progress') as HTMLDivElement;
+    const hudStop = document.getElementById('hud-stop') as HTMLButtonElement;
+
+    function restoreUI() {
+      hud.remove();
+      if (controlsPanel) controlsPanel.style.display = '';
+      if (recWrap) recWrap.style.justifyContent = '';
+      startBtn.style.display = 'inline-block';
+    }
+
+    hudStop.addEventListener('click', () => { abort = true; stop(); });
+
+    // STEP 2: Request native screen capture BEFORE refreshing the iframe.
+    // The refresh must happen AFTER the user approves screen sharing so
+    // the recording starts from the very beginning of the Gate cover.
+    hudStatus.textContent = config.lang === 'en'
+      ? '📺 Select this window in the browser share dialog...'
+      : '📺 Pilih tetingkap ini dalam dialog perkongsian...';
+
+    let displayStream: MediaStream;
+    try {
+      displayStream = await (navigator.mediaDevices as unknown as {
+        getDisplayMedia: (opts: unknown) => Promise<MediaStream>
+      }).getDisplayMedia({
+        video: {
+          frameRate: { ideal: 30, max: 60 },
+          displaySurface: 'window',
+        },
+        audio: false,  // We mix invitation audio separately below
+        preferCurrentTab: true,
+      });
+    } catch (e) {
+      restoreUI();
+      statusEl.textContent = config.lang === 'en' ? 'Recording cancelled.' : 'Rakaman dibatalkan.';
+      return;
+    }
+
+    if (abort) {
+      displayStream.getTracks().forEach(t => t.stop());
+      restoreUI();
+      return;
+    }
+
+    // STEP 3: NOW refresh the iframe — screen sharing is active, recording can begin immediately after.
+    hudStatus.textContent = config.lang === 'en'
+      ? '⏳ Refreshing invitation to start from beginning...'
+      : '⏳ Memuat semula jemputan dari awal...';
+    hudProgress.style.width = '5%';
+
+    await new Promise<void>((resolve) => {
+      let resolved = false;
+      const done = () => { if (!resolved) { resolved = true; resolve(); } };
+      iframeEl.onload = done;
+      iframeEl.src = config.src;
+      setTimeout(done, 1500);
+    });
+    await new Promise((r) => setTimeout(r, 600));
+
+    if (abort) {
+      displayStream.getTracks().forEach(t => t.stop());
+      restoreUI();
+      return;
+    }
+
+    // STEP 4: Build a combined stream — screen video track + invitation audio track
+    // We must create a new MediaStream from parts so MediaRecorder picks up both
+    const videoTracks = displayStream.getVideoTracks();
+    const combinedTracks: MediaStreamTrack[] = [...videoTracks];
+
+    if (config.includeAudio) {
+      const audioTrack = captureAudioTrack();
+      if (audioTrack) combinedTracks.push(audioTrack);
+    }
+    const combinedStream = new MediaStream(combinedTracks);
+
+    // STEP 5: Setup MediaRecorder on the combined stream
+    let mimeType = 'video/webm;codecs=vp9';
+    if (!MediaRecorder.isTypeSupported(mimeType)) {
+      mimeType = MediaRecorder.isTypeSupported('video/mp4') ? 'video/mp4' : 'video/webm';
+    }
+
+    const recordedChunks: Blob[] = [];
+    mediaRecorder = new MediaRecorder(combinedStream, { mimeType, videoBitsPerSecond: 5_000_000 });
+    mediaRecorder.ondataavailable = (e) => { if (e.data?.size > 0) recordedChunks.push(e.data); };
+    mediaRecorder.onstop = () => {
+      displayStream.getTracks().forEach(t => t.stop());
+      restoreUI();
+      const blob = new Blob(recordedChunks, { type: mimeType.includes('mp4') ? 'video/mp4' : 'video/webm' });
+      const url = URL.createObjectURL(blob);
+      downloadLink.href = url;
+      downloadLink.download = `eWedding_${config.loginId}_Video.${mimeType.includes('mp4') ? 'mp4' : 'webm'}`;
+      downloadWrap.style.display = 'block';
+      startBtn.style.display = 'inline-block';
+      startBtn.textContent = config.lang === 'en' ? '🔁 Record Again' : '🔁 Rakam Semula';
+      document.title = config.lang === 'en' ? '✅ Video Ready' : '✅ Video Sedia';
+      if (audioCtx) audioCtx.close().catch(() => {});
+    };
+
+    mediaRecorder.start(100);
+
+    // If user clicks "Stop sharing" in browser chrome, auto-stop the recorder
+    videoTracks[0]?.addEventListener('ended', () => {
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        abort = true;
+        mediaRecorder.stop();
+      }
+    });
+
+    // STEP 6: Simulation motion sequence — runs while native screen capture records
+    const totalSecs = config.sections.length;
+    const totalSimDurationMs = 3000 + 2500 + totalSecs * config.pageDurationMs;
+    const simStart = performance.now();
+
+    function updateProgress() {
+      if (abort) return;
+      const elapsed = performance.now() - simStart;
+      const ratio = Math.min(elapsed / totalSimDurationMs, 1);
+      if (hudProgress) hudProgress.style.width = `${5 + Math.round(ratio * 95)}%`;
+      if (ratio < 1) requestAnimationFrame(updateProgress);
+    }
+    requestAnimationFrame(updateProgress);
+
+    // Phase 1: 3s showing closed Gate cover
+    for (let s = 3; s > 0; s--) {
+      if (abort) break;
+      hudStatus.textContent = config.lang === 'en'
+        ? `🤖 Gate cover — opening in ${s}s...`
+        : `🤖 Skrin Penutup — buka dalam ${s}s...`;
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+
+    if (!abort) {
+      // Phase 2: Click Open Invitation & wait for door animation
+      hudStatus.textContent = config.lang === 'en'
+        ? '🤖 Clicking "Open Invitation"...'
+        : '🤖 Mensimulasi klik "Buka Jemputan"...';
+      const btn = iframeEl.contentDocument?.querySelector<HTMLElement>('.open-invitation-btn') ??
+                  iframeEl.contentDocument?.querySelector<HTMLElement>('button');
+      btn?.click();
+      iframeEl.contentWindow?.postMessage({ type: 'OPEN_GATE' }, '*');
+      await new Promise((r) => setTimeout(r, 2500));
+    }
+
+    if (!abort) {
+      // Phase 3: Hero card
+      const heroLabel = config.sections[1]?.label ?? 'Invitation Hero';
+      hudStatus.textContent = `🤖 Viewing ${heroLabel}`;
+      await new Promise((r) => setTimeout(r, config.pageDurationMs));
+    }
+
+    if (!abort) {
+      // Phase 4: Scroll remaining sections
+      for (let i = 2; i < totalSecs; i++) {
+        if (abort) break;
+        const sec = config.sections[i];
+        hudStatus.textContent = `🤖 Viewing ${sec.label} (${i + 1}/${totalSecs})`;
+        iframeEl.contentWindow?.postMessage({ type: 'PREVIEW_SELECT_SECTION', sectionId: sec.key }, '*');
+        const secEl = iframeEl.contentDocument?.getElementById(sec.key) ??
+                      iframeEl.contentDocument?.querySelector<HTMLElement>(`.${sec.key}-section`);
+        secEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        await new Promise((r) => setTimeout(r, config.pageDurationMs));
+      }
+    }
+
+    hudStatus.textContent = config.lang === 'en' ? '✅ Wrapping up...' : '✅ Menyiapkan fail...';
+    stop();
+  }
+
+  function stop() {
+    abort = true;
+    if (animFrameId) cancelAnimationFrame(animFrameId);
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.stop();
+    } else {
+      stopBtn.style.display = 'none';
+      startBtn.style.display = 'inline-block';
+      const previewBtn = $('rec-preview') as HTMLButtonElement | null;
+      if (previewBtn) previewBtn.style.display = 'inline-block';
+    }
+  }
+
+  const previewBtn = $('rec-preview') as HTMLButtonElement | null;
+  const previewStopBtn = $('rec-preview-stop') as HTMLButtonElement | null;
+
+  async function runPreview() {
+    errorEl.style.display = 'none';
+    downloadWrap.style.display = 'none';
+    startBtn.style.display = 'none';
+    if (previewBtn) previewBtn.style.display = 'none';
+    if (previewStopBtn) previewStopBtn.style.display = 'inline-block';
+    abort = false;
+
+    statusEl.textContent = config.lang === 'en' ? '👁️ [PREVIEW] Loading Gate cover screen...' : '👁️ [UJIAN] Memuat semula skrin penutup...';
     progressEl.style.width = '5%';
 
     await new Promise<void>((resolve) => {
@@ -102,237 +333,81 @@ function recorderMain(config: {
       setTimeout(done, 1200);
     });
 
-    await new Promise((r) => setTimeout(r, 500));
+    await new Promise((r) => setTimeout(r, 600));
+    if (abort) return;
+
+    // 3-second delay on the closed Gate cover screen
+    for (let s = 3; s > 0; s--) {
+      if (abort) return;
+      statusEl.textContent = config.lang === 'en'
+        ? `👁️ [PREVIEW] Closed Gate screen (opening in ${s}s)...`
+        : `👁️ [UJIAN] Skrin Penutup Jemputan (buka dalam ${s}s)...`;
+      progressEl.style.width = `${Math.round(((3 - s) / 3) * 15)}%`;
+      await new Promise((r) => setTimeout(r, 1000));
+    }
 
     if (abort) return;
 
-    // STEP 2: Pre-cache clean snapshots for each section BEFORE starting MediaRecorder
-    // This removes html2canvas thread locks from the live recording process entirely!
-    const snapshots: (HTMLCanvasElement | null)[] = [];
-    const total = config.sections.length;
+    // Simulate clicking "Open Invitation" button
+    statusEl.textContent = config.lang === 'en'
+      ? '🤖 [PREVIEW] Clicking "Open Invitation" button...'
+      : '🤖 [UJIAN] Mensimulasi klik butang "Buka Jemputan"...';
+    progressEl.style.width = '20%';
 
-    for (let i = 0; i < total; i++) {
+    if (iframeEl.contentDocument) {
+      const btn = iframeEl.contentDocument.querySelector('.open-invitation-btn') || iframeEl.contentDocument.querySelector('button');
+      if (btn) (btn as HTMLElement).click();
+    }
+    if (iframeEl.contentWindow) {
+      iframeEl.contentWindow.postMessage({ type: 'OPEN_GATE' }, '*');
+    }
+
+    // Wait 2.5 seconds for door opening animation to reveal Hero card
+    await new Promise((r) => setTimeout(r, 2500));
+    if (abort) return;
+
+    // Pause on Hero section for pageDurationMs
+    statusEl.textContent = config.lang === 'en'
+      ? `👁️ [PREVIEW] Viewing ${config.sections[1]?.label || 'Invitation Hero'}`
+      : `👁️ [UJIAN] Memapar ${config.sections[1]?.label || 'Jemputan Utama'}`;
+    progressEl.style.width = '35%';
+    await new Promise((r) => setTimeout(r, config.pageDurationMs));
+    if (abort) return;
+
+    // Smoothly scroll section by section starting from section 2 (Parents)
+    const totalSecs = config.sections.length;
+    for (let i = 2; i < totalSecs; i++) {
       if (abort) break;
       const sec = config.sections[i];
-      statusEl.textContent = `Menyediakan: ${sec.label} (${i + 1}/${total})`;
-      progressEl.style.width = `${5 + Math.round(((i + 1) / total) * 35)}%`;
+      statusEl.textContent = `👁️ [PREVIEW] Scrolling & Viewing ${sec.label} (${i + 1}/${totalSecs})`;
+      progressEl.style.width = `${35 + Math.round(((i - 1) / (totalSecs - 2)) * 65)}%`;
 
       if (iframeEl.contentWindow) {
-        if (i === 1) {
-          // Open gate transition when moving from Gate to Hero section
-          iframeEl.contentWindow.postMessage({ type: 'OPEN_GATE' }, '*');
-          await new Promise((r) => setTimeout(r, 700));
-        }
         iframeEl.contentWindow.postMessage({ type: 'PREVIEW_SELECT_SECTION', sectionId: sec.key }, '*');
-      }
-
-      await new Promise((r) => setTimeout(r, 400));
-
-      let snap: HTMLCanvasElement | null = null;
-      if (iframeEl.contentDocument && iframeEl.contentDocument.body) {
-        try {
-          const h2c = (window as unknown as { html2canvas: typeof html2canvas }).html2canvas || html2canvas;
-          if (h2c) {
-            snap = await h2c(iframeEl.contentDocument.body, {
-              useCORS: true,
-              allowTaint: true,
-              backgroundColor: '#111827',
-              windowWidth: 390,
-              windowHeight: 844,
-              scale: 1.5,
-              logging: false,
-            });
-          }
-        } catch (e) {
-          console.warn('Snapshot notice:', e);
+        if (iframeEl.contentDocument) {
+          const secEl = iframeEl.contentDocument.getElementById(sec.key) || iframeEl.contentDocument.querySelector(`.${sec.key}-section`);
+          if (secEl) secEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       }
-      snapshots.push(snap);
+      await new Promise((r) => setTimeout(r, config.pageDurationMs));
     }
 
-    if (abort) return;
-
-    // STEP 3: Setup Canvas & MediaRecorder NOW that snapshots are pre-loaded in memory
-    const CANVAS_W = 1179;
-    const CANVAS_H = 2556;
-    const renderCanvas = document.createElement('canvas');
-    renderCanvas.width = CANVAS_W;
-    renderCanvas.height = CANVAS_H;
-    const ctx = renderCanvas.getContext('2d');
-
-    if (!ctx) {
-      showError('Gagal menyediakan canvas perakam.');
-      return;
+    previewStop();
+    if (!abort) {
+      statusEl.textContent = config.lang === 'en' ? '✅ Simulation preview finished! Click Start Recording.' : '✅ Ujian simulasi selesai! Klik Mula Rakam Video.';
     }
-
-    // Capture 30FPS stream directly from renderCanvas
-    const canvasStream = renderCanvas.captureStream(30);
-
-    if (config.includeAudio) {
-      const audioTrack = captureAudioTrack();
-      if (audioTrack) {
-        canvasStream.addTrack(audioTrack);
-      }
-    }
-
-    let mimeType = 'video/webm;codecs=vp9';
-    if (!MediaRecorder.isTypeSupported(mimeType)) {
-      if (MediaRecorder.isTypeSupported('video/mp4')) {
-        mimeType = 'video/mp4';
-      } else {
-        mimeType = 'video/webm';
-      }
-    }
-
-    const recordedChunks: Blob[] = [];
-    mediaRecorder = new MediaRecorder(canvasStream, {
-      mimeType,
-      videoBitsPerSecond: 4000000,
-    });
-
-    mediaRecorder.ondataavailable = (e) => {
-      if (e.data && e.data.size > 0) {
-        recordedChunks.push(e.data);
-      }
-    };
-
-    mediaRecorder.onstop = () => {
-      if (animFrameId) cancelAnimationFrame(animFrameId);
-      const blob = new Blob(recordedChunks, { type: mimeType.includes('mp4') ? 'video/mp4' : 'video/webm' });
-      const url = URL.createObjectURL(blob);
-      downloadLink.href = url;
-      downloadLink.download = `eWedding_${config.loginId}_Video.${mimeType.includes('mp4') ? 'mp4' : 'webm'}`;
-      downloadWrap.style.display = 'block';
-      stopBtn.style.display = 'none';
-      startBtn.style.display = 'inline-block';
-      startBtn.textContent = config.lang === 'en' ? '🔁 Record Again' : '🔁 Rakam Semula';
-      document.title = config.lang === 'en' ? '✅ Video Ready' : '✅ Video Sedia';
-      if (audioCtx) audioCtx.close().catch(() => {});
-    };
-
-    // Start recording ONLY ONCE snapshots are 100% pre-loaded!
-    mediaRecorder.start();
-
-    // STEP 4: Start smooth playback loop across pre-loaded section snapshots
-    const startTime = performance.now();
-    const totalDurationMs = total * config.pageDurationMs;
-
-    function drawFrame() {
-      if (abort) return;
-
-      const elapsed = performance.now() - startTime;
-      const progressRatio = Math.min(elapsed / totalDurationMs, 1);
-      const currentSecIdx = Math.min(Math.floor(elapsed / config.pageDurationMs), total - 1);
-
-      progressEl.style.width = `${40 + Math.round(progressRatio * 60)}%`;
-      statusEl.textContent = `Merekod: ${config.sections[currentSecIdx].label} (${currentSecIdx + 1}/${total})`;
-      document.title = `🔴 ${Math.round(progressRatio * 100)}%`;
-
-      const currentSnap = snapshots[currentSecIdx];
-
-      if (config.showPhoneFrame) {
-        // Mode 1: iPhone 17 Pro Titanium Frame + Dynamic Island
-        const bgGrad = ctx!.createLinearGradient(0, 0, CANVAS_W, CANVAS_H);
-        bgGrad.addColorStop(0, '#1a1d27');
-        bgGrad.addColorStop(0.5, '#0f1117');
-        bgGrad.addColorStop(1, '#050608');
-        ctx!.fillStyle = bgGrad;
-        ctx!.fillRect(0, 0, CANVAS_W, CANVAS_H);
-
-        const framePadding = 48;
-        const phoneW = CANVAS_W - framePadding * 2;
-        const phoneH = CANVAS_H - framePadding * 2;
-        const cornerRadius = 140;
-
-        ctx!.save();
-        ctx!.shadowColor = 'rgba(0,0,0,0.7)';
-        ctx!.shadowBlur = 60;
-        ctx!.shadowOffsetY = 30;
-
-        ctx!.beginPath();
-        ctx!.roundRect(framePadding, framePadding, phoneW, phoneH, cornerRadius);
-        ctx!.fillStyle = '#22252a';
-        ctx!.fill();
-        ctx!.restore();
-
-        const bezelGrad = ctx!.createLinearGradient(framePadding, framePadding, framePadding + phoneW, framePadding + phoneH);
-        bezelGrad.addColorStop(0, 'rgba(255,255,255,0.25)');
-        bezelGrad.addColorStop(0.3, 'rgba(255,255,255,0.05)');
-        bezelGrad.addColorStop(0.7, 'rgba(255,255,255,0.02)');
-        bezelGrad.addColorStop(1, 'rgba(255,255,255,0.15)');
-        ctx!.lineWidth = 14;
-        ctx!.strokeStyle = bezelGrad;
-        ctx!.stroke();
-
-        const screenPadding = 24;
-        const screenX = framePadding + screenPadding;
-        const screenY = framePadding + screenPadding;
-        const screenW = phoneW - screenPadding * 2;
-        const screenH = phoneH - screenPadding * 2;
-        const screenRadius = cornerRadius - screenPadding;
-
-        ctx!.save();
-        ctx!.beginPath();
-        ctx!.roundRect(screenX, screenY, screenW, screenH, screenRadius);
-        ctx!.clip();
-
-        ctx!.fillStyle = '#111827';
-        ctx!.fillRect(screenX, screenY, screenW, screenH);
-
-        if (currentSnap) {
-          ctx!.drawImage(currentSnap, screenX, screenY, screenW, screenH);
-        }
-
-        const islandW = 340;
-        const islandH = 95;
-        const islandX = CANVAS_W / 2 - islandW / 2;
-        const islandY = screenY + 40;
-
-        ctx!.beginPath();
-        ctx!.roundRect(islandX, islandY, islandW, islandH, 50);
-        ctx!.fillStyle = '#000000';
-        ctx!.fill();
-        ctx!.lineWidth = 3;
-        ctx!.strokeStyle = 'rgba(255,255,255,0.12)';
-        ctx!.stroke();
-
-        ctx!.beginPath();
-        ctx!.arc(islandX + islandW - 55, islandY + islandH / 2, 16, 0, Math.PI * 2);
-        ctx!.fillStyle = '#101014';
-        ctx!.fill();
-
-        ctx!.restore();
-      } else {
-        // Mode 2: No frame video (iPhone 17 Pro/Pro Max screen without frame & without Dynamic Island)
-        ctx!.fillStyle = '#0a0d14';
-        ctx!.fillRect(0, 0, CANVAS_W, CANVAS_H);
-
-        if (currentSnap) {
-          ctx!.drawImage(currentSnap, 0, 0, CANVAS_W, CANVAS_H);
-        }
-      }
-
-      if (elapsed < totalDurationMs && !abort) {
-        animFrameId = requestAnimationFrame(drawFrame);
-      } else {
-        statusEl.textContent = config.lang === 'en' ? 'Finishing up video...' : 'Menyiapkan fail video...';
-        stop();
-      }
-    }
-
-    drawFrame();
   }
 
-  function stop() {
+  function previewStop() {
     abort = true;
-    if (animFrameId) cancelAnimationFrame(animFrameId);
-    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-      mediaRecorder.stop();
-    } else {
-      stopBtn.style.display = 'none';
-      startBtn.style.display = 'inline-block';
-    }
+    if (previewStopBtn) previewStopBtn.style.display = 'none';
+    if (previewBtn) previewBtn.style.display = 'inline-block';
+    startBtn.style.display = 'inline-block';
+    stopBtn.style.display = 'none';
   }
+
+  if (previewBtn) previewBtn.addEventListener('click', runPreview);
+  if (previewStopBtn) previewStopBtn.addEventListener('click', previewStop);
 
   startBtn.addEventListener('click', start);
   stopBtn.addEventListener('click', stop);
@@ -347,17 +422,20 @@ function buildRecorderPopupHtml(config: {
   showPhoneFrame: boolean;
   pageDurationMs: number;
   includeAudio: boolean;
+  autoSimulate: boolean;
   loginId: string;
   sections: { key: string; label: string }[];
 }): string {
   const title = config.lang === 'en' ? 'Recording' : 'Merekod Video';
   const startLabel = config.lang === 'en' ? '▶️ Start Recording' : '▶️ Mula Rakam Video';
   const stopLabel = config.lang === 'en' ? '⏹️ Stop' : '⏹️ Hentikan';
+  const previewLabel = config.lang === 'en' ? '👁️ Preview Simulation (No Record)' : '👁️ Uji Simulasi (Tanpa Rakam)';
+  const previewStopLabel = config.lang === 'en' ? '⏹️ Stop Preview' : '⏹️ Hentikan Ujian';
   const downloadLabel = config.lang === 'en' ? '⬇️ Download Video' : '⬇️ Muat Turun Video';
   const hint =
     config.lang === 'en'
-      ? 'Click Start Recording. The video will generate automatically.'
-      : 'Klik Mula Rakam Video. Video akan dihasilkan secara automatik.';
+      ? 'Test preview or click Start Recording to generate your video.'
+      : 'Uji simulasi atau klik Mula Rakam Video untuk hasilkan video.';
 
   const phoneFrameCss = config.showPhoneFrame
     ? `
@@ -406,15 +484,17 @@ function buildRecorderPopupHtml(config: {
         position: relative;
         width: 300px;
         height: 650px;
-        border-radius: 32px;
+        border-radius: 0px;
         overflow: hidden;
         background: #0a0d14;
         box-shadow: 0 20px 40px rgba(0,0,0,0.6);
         box-sizing: border-box;
+        border: 1px solid rgba(255,255,255,0.1);
       }
       #rec-screen-slot {
         width: 100%;
         height: 100%;
+        border-radius: 0px;
         overflow: hidden;
       }
       #rec-island { display: none; }
@@ -451,10 +531,24 @@ function buildRecorderPopupHtml(config: {
   button { border: none; border-radius: 12px; padding: 12px 18px; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
   #rec-start { background: linear-gradient(135deg,#C9A84C,#b8963f); color: #111; width: 100%; box-shadow: 0 4px 12px rgba(201,168,76,0.3); }
   #rec-start:hover { transform: translateY(-1px); filter: brightness(1.08); }
+  #rec-preview { background: rgba(201,168,76,0.15); color: #C9A84C; border: 1px solid rgba(201,168,76,0.4); width: 100%; }
+  #rec-preview:hover { background: rgba(201,168,76,0.25); }
+  #rec-preview-stop { background: #dc2626; color: #fff; display: none; width: 100%; }
   #rec-stop { background: #dc2626; color: #fff; display: none; width: 100%; }
   #rec-download-wrap { display: none; width: 100%; text-align: center; }
   #rec-download { display: inline-block; width: 100%; box-sizing: border-box; padding: 12px; background: linear-gradient(135deg,#16a34a,#22c55e); color: #fff; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 14px; box-shadow: 0 4px 12px rgba(34,197,94,0.3); }
   #rec-error { display: none; color: #f87171; font-size: 12px; background: rgba(248,113,113,0.1); padding: 8px 12px; border-radius: 8px; }
+  
+  /* Toggle Switch Styles for Recorder Window */
+  .switch-wrap { display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.04); padding: 10px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); }
+  .switch-label { font-size: 12px; font-weight: 600; color: #C9A84C; display: flex; flex-direction: column; gap: 2px; }
+  .switch-sub { font-size: 10px; color: #9ca3af; font-weight: 400; }
+  .switch { position: relative; display: inline-block; width: 38px; height: 22px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #374151; transition: .3s; border-radius: 20px; }
+  .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+  input:checked + .slider { background-color: #C9A84C; }
+  input:checked + .slider:before { transform: translateX(16px); }
 
   @media (max-width: 720px) {
     #rec-wrap { flex-direction: column; }
@@ -475,9 +569,23 @@ function buildRecorderPopupHtml(config: {
     <div id="rec-controls">
       <h3 id="rec-title">🎥 ${config.lang === 'en' ? 'Recorder Control' : 'Kawalan Perakam'}</h3>
       <div id="rec-hint">${hint}</div>
+
+      <div class="switch-wrap">
+        <div class="switch-label">
+          <span>🤖 ${config.lang === 'en' ? 'Auto-Walkthrough Simulation' : 'Simulasi Klik & Skrol Automatik'}</span>
+          <span class="switch-sub">${config.lang === 'en' ? '3s delay, auto-click & smooth scroll' : '3s penangguhan, auto-klik & skrol'}</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="rec-auto-sim" ${config.autoSimulate ? 'checked' : ''} />
+          <span class="slider"></span>
+        </label>
+      </div>
+
       <div id="rec-error"></div>
       <div id="rec-status"></div>
       <div id="rec-progress-track"><div id="rec-progress"></div></div>
+      <button id="rec-preview">${previewLabel}</button>
+      <button id="rec-preview-stop">${previewStopLabel}</button>
       <button id="rec-start">${startLabel}</button>
       <button id="rec-stop">${stopLabel}</button>
       <div id="rec-download-wrap">
@@ -499,6 +607,7 @@ export default function IPhoneRecorderModal({
   const [showPhoneFrame, setShowPhoneFrame] = useState<boolean>(true);
   const [pageDuration, setPageDuration] = useState<number>(5.0);
   const [includeAudio, setIncludeAudio] = useState<boolean>(true);
+  const [autoSimulate, setAutoSimulate] = useState<boolean>(true);
   const [popupOpened, setPopupOpened] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -533,6 +642,7 @@ export default function IPhoneRecorderModal({
       showPhoneFrame,
       pageDurationMs: pageDuration * 1000,
       includeAudio,
+      autoSimulate,
       loginId,
       sections: sectionsList,
     });
@@ -633,7 +743,7 @@ export default function IPhoneRecorderModal({
                   gap: '0.35rem',
                 }}
               >
-                📱 Bingkai iPhone 17 Pro
+                📱 iPhone 17 Pro
               </button>
               <button
                 onClick={() => setShowPhoneFrame(false)}
@@ -672,6 +782,21 @@ export default function IPhoneRecorderModal({
               onChange={(e) => setPageDuration(parseFloat(e.target.value))}
               style={{ width: '100%', accentColor: '#C9A84C' }}
             />
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', background: 'var(--admin-stat-bg)', borderRadius: '12px', border: '1px solid var(--admin-border)' }}>
+            <div>
+              <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--admin-text)', display: 'block' }}>
+                🤖 {lang === 'en' ? 'Auto-Human Walkthrough Simulation' : 'Simulasi Klik & Skrol Automatik'}
+              </span>
+              <span style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)' }}>
+                {lang === 'en' ? '3s delay, auto-click "Open", & smooth scroll' : 'Menunggu 3s, auto-klik "Buka Kad", & skrol'}
+              </span>
+            </div>
+            <label className="toggle-switch">
+              <input type="checkbox" checked={autoSimulate} onChange={(e) => setAutoSimulate(e.target.checked)} />
+              <span className="toggle-slider" />
+            </label>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', background: 'var(--admin-stat-bg)', borderRadius: '12px', border: '1px solid var(--admin-border)' }}>
