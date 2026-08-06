@@ -8,25 +8,36 @@ export interface SessionData {
   isLoggedIn?: boolean;
 }
 
+function getSessionPassword(): string {
+  const secret = process.env.SESSION_SECRET || '';
+  if (secret.length >= 32) return secret;
+  return 'ewedding-super-secret-key-min-32-chars-long-secure-fallback!';
+}
+
 const SESSION_OPTIONS = {
-  password: process.env.SESSION_SECRET || 'ewedding-super-secret-key-min-32-chars!!',
+  password: getSessionPassword(),
   cookieName: 'ewedding_session',
   cookieOptions: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
+    sameSite: 'lax' as const,
     maxAge: 60 * 60 * 24 * 7, // 7 days
   },
 };
 
 export async function getSession(): Promise<IronSession<SessionData>> {
   const cookieStore = await cookies();
-  return getIronSession<SessionData>(cookieStore, SESSION_OPTIONS);
+  return getIronSession<SessionData>(cookieStore, {
+    ...SESSION_OPTIONS,
+    password: getSessionPassword(),
+  });
 }
 
 export async function getSuperAdminSession(): Promise<IronSession<SessionData>> {
   const cookieStore = await cookies();
   return getIronSession<SessionData>(cookieStore, {
     ...SESSION_OPTIONS,
+    password: getSessionPassword(),
     cookieName: 'ewedding_superadmin_session',
   });
 }
@@ -35,6 +46,7 @@ export async function getCoupleSession(): Promise<IronSession<SessionData>> {
   const cookieStore = await cookies();
   return getIronSession<SessionData>(cookieStore, {
     ...SESSION_OPTIONS,
+    password: getSessionPassword(),
     cookieName: 'ewedding_couple_session',
   });
 }
@@ -44,6 +56,7 @@ export async function hashPassword(password: string): Promise<string> {
 }
 
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {
+  if (!hash) return false;
   return bcrypt.compare(password, hash);
 }
 

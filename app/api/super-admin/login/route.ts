@@ -5,6 +5,16 @@ import { getSuperAdminSession, getCoupleSession, hashPassword, verifyPassword } 
 // GET /api/super-admin/login — Check setup status
 export async function GET() {
   try {
+    // Check if credentials exist in environment variables (Vercel deployment)
+    const envUsername = process.env.SUPERADMIN_USERNAME;
+    const envPassword = process.env.SUPERADMIN_PASSWORD;
+    if (envUsername && envPassword) {
+      return NextResponse.json({
+        setupRequired: false,
+        username: envUsername,
+      });
+    }
+
     const db = readDb();
     // Setup is required if either passwordHash or username is missing
     const setupRequired = !db.superAdmin?.passwordHash || !db.superAdmin?.username;
@@ -12,7 +22,7 @@ export async function GET() {
       setupRequired,
       username: db.superAdmin?.username || '',
     });
-  } catch (err) {
+  } catch (err: any) {
     console.error('GET /api/super-admin/login error:', err);
     return NextResponse.json({ setupRequired: true, username: '' });
   }
@@ -26,6 +36,23 @@ export async function POST(req: NextRequest) {
 
     if (!password) {
       return NextResponse.json({ error: 'Sila masukkan kata laluan.' }, { status: 400 });
+    }
+
+    // Check Vercel environment variables fallback first
+    const envUsername = process.env.SUPERADMIN_USERNAME;
+    const envPassword = process.env.SUPERADMIN_PASSWORD;
+    if (envUsername && envPassword && username) {
+      if (username.trim().toLowerCase() === envUsername.trim().toLowerCase() && password === envPassword) {
+        try {
+          const session = await getSuperAdminSession();
+          session.role = 'superadmin';
+          session.isLoggedIn = true;
+          await session.save();
+        } catch (e) {
+          console.warn('Session save failed in env auth mode:', e);
+        }
+        return NextResponse.json({ ok: true, username: envUsername });
+      }
     }
 
     const db = readDb();
@@ -47,10 +74,14 @@ export async function POST(req: NextRequest) {
       };
       writeDb(db);
 
-      const session = await getSuperAdminSession();
-      session.role = 'superadmin';
-      session.isLoggedIn = true;
-      await session.save();
+      try {
+        const session = await getSuperAdminSession();
+        session.role = 'superadmin';
+        session.isLoggedIn = true;
+        await session.save();
+      } catch (e) {
+        console.warn('Session save failed during setup:', e);
+      }
 
       return NextResponse.json({ ok: true, firstTime: true, username: cleanUsername });
     }
@@ -72,15 +103,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Nama pengguna atau kata laluan tidak sah.' }, { status: 401 });
     }
 
-    const session = await getSuperAdminSession();
-    session.role = 'superadmin';
-    session.isLoggedIn = true;
-    await session.save();
+    try {
+      const session = await getSuperAdminSession();
+      session.role = 'superadmin';
+      session.isLoggedIn = true;
+      await session.save();
+    } catch (e) {
+      console.warn('Session save failed during login:', e);
+    }
 
     return NextResponse.json({ ok: true, username: db.superAdmin.username });
-  } catch (err) {
+  } catch (err: any) {
     console.error('POST /api/super-admin/login error:', err);
-    return NextResponse.json({ error: 'Ralat pelayan. Sila cuba semula.' }, { status: 500 });
+    return NextResponse.json(
+      { error: err?.message ? `Ralat pelayan: ${err.message}` : 'Ralat pelayan. Sila cuba semula.' },
+      { status: 500 }
+    );
   }
 }
 
