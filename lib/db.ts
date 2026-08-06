@@ -231,6 +231,7 @@ export interface Payment {
 }
 
 export interface SuperAdmin {
+  email?: string;
   passwordHash: string;
 }
 
@@ -376,7 +377,7 @@ function ensureDbFile(): Database {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   if (!fs.existsSync(DB_PATH)) {
     const initial: Database = {
-      superAdmin: { passwordHash: '' },
+      superAdmin: { email: '', passwordHash: '' },
       couples: [],
       payments: [],
       globalTextOverrides: {},
