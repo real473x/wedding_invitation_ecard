@@ -160,6 +160,9 @@ export default function SuperAdminLogin() {
             {setupRequired && (
               <div className={styles.notice} style={{ background: 'rgba(201, 168, 76, 0.15)', border: '1px solid rgba(201, 168, 76, 0.3)', color: '#C9A84C', padding: '0.85rem', borderRadius: '10px', fontSize: '0.82rem', lineHeight: '1.5', marginBottom: '1rem' }}>
                 👋 {t.superAdminLoginHint || 'Sila daftarkan Nama Pengguna dan Kata Laluan Super Admin anda untuk memulakan sistem.'}
+                <div style={{ marginTop: '8px', paddingTop: '6px', borderTop: '1px dashed rgba(201, 168, 76, 0.3)', fontSize: '0.78rem', opacity: 0.9 }}>
+                  💡 <strong>Deployment Vercel:</strong> Tetapkan <code>SUPERADMIN_USERNAME</code> &amp; <code>SUPERADMIN_PASSWORD</code> dalam Vercel Environment Variables supaya akaun kekal di semua peranti (Laptop &amp; Telefon).
+                </div>
               </div>
             )}
 
