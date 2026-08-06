@@ -72,14 +72,14 @@ export default function SuperAdminLogin() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => null);
       if (!res.ok) {
-        setError(data.error || t.connError);
+        setError(data?.error || t.usernameOrPasswordInvalid || 'Nama pengguna atau kata laluan tidak sah.');
         return;
       }
 
-      if (data.firstTime || setupRequired) {
-        const adminUser = data.username || username;
+      if (data?.firstTime || setupRequired) {
+        const adminUser = data?.username || username;
         setRegisteredUsername(adminUser);
         setTimeout(() => {
           router.push('/super-admin');
@@ -87,7 +87,8 @@ export default function SuperAdminLogin() {
       } else {
         router.push('/super-admin');
       }
-    } catch {
+    } catch (err) {
+      console.error('Super admin login submit error:', err);
       setError(t.connError);
     } finally {
       setLoading(false);
