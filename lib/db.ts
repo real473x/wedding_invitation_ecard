@@ -686,18 +686,6 @@ export function deleteLocalDbFile(): boolean {
 }
 
 export async function dropAllData(): Promise<void> {
-  deleteLocalDbFile();
-
-  const redis = getRedisClient();
-  if (redis) {
-    try {
-      await redis.del(REDIS_KEY);
-    } catch (e) {
-      console.error('Failed to delete Redis key ewedding:db:', e);
-    }
-  }
-
-  // Set fresh uninitialized DB state
   const resetDb: Database = {
     superAdmin: { username: '', passwordHash: '' },
     couples: [],
@@ -705,10 +693,33 @@ export async function dropAllData(): Promise<void> {
     globalTextOverrides: {},
   };
 
+  const redis = getRedisClient();
   if (redis) {
     try {
       await redis.set(REDIS_KEY, resetDb);
-    } catch (_) {}
+    } catch (e) {
+      console.error('Failed to delete Redis key ewedding:db:', e);
+    }
+  }
+
+  const defaultPath = path.join(process.cwd(), 'data', 'db.json');
+  const tmpPath = path.join('/tmp', 'db.json');
+  const dataStr = JSON.stringify(resetDb, null, 2);
+
+  try {
+    const dir = path.dirname(defaultPath);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(defaultPath, dataStr);
+  } catch (e) {
+    console.warn('Unable to overwrite data/db.json:', e);
+  }
+
+  try {
+    const dir = path.dirname(tmpPath);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(tmpPath, dataStr);
+  } catch (e) {
+    console.warn('Unable to overwrite /tmp/db.json:', e);
   }
 }
 
