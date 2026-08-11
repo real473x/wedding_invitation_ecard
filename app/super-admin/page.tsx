@@ -1107,6 +1107,22 @@ export default function SuperAdminDashboard() {
                   </div>
                 </div>
               )}
+
+              {!storageInfo?.superAdminConfigured && !storageLoading && (
+                <div style={{ marginTop: '1rem', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '12px', padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+                  <div>
+                    <strong style={{ color: '#ef4444', fontSize: '0.9rem', display: 'block', marginBottom: '0.25rem' }}>
+                      ⚠️ Akaun Super Admin Belum Ditetapkan Dalam Database Vercel / Redis
+                    </strong>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--admin-text-muted)' }}>
+                      Pangkalan data baru sahaja diset semula atau belum mempunyai rekod Super Admin. Sila daftarkan Nama Pengguna dan Kata Laluan baharu.
+                    </span>
+                  </div>
+                  <button className="btn btn-primary btn-sm" onClick={() => router.push('/super-admin/login')}>
+                    🚀 Tetapkan Akaun Sekarang
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Vercel Redis Option Card */}
