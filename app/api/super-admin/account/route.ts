@@ -15,7 +15,7 @@ export async function GET() {
   const authErr = await requireSuperAdmin();
   if (authErr) return authErr;
 
-  const db = readDb();
+  const db = await readDb();
   return NextResponse.json({
     username: db.superAdmin.username || '',
   });
@@ -32,7 +32,7 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Please enter your current password for verification.' }, { status: 400 });
     }
 
-    const db = readDb();
+    const db = await readDb();
     
     // Verify current password
     const valid = await verifyPassword(currentPassword, db.superAdmin.passwordHash);
@@ -54,7 +54,7 @@ export async function PATCH(req: NextRequest) {
       db.superAdmin.passwordHash = await hashPassword(newPassword);
     }
 
-    writeDb(db);
+    await writeDb(db);
 
     return NextResponse.json({ ok: true, username: db.superAdmin.username });
   } catch (err) {

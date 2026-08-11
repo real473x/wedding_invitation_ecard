@@ -16,7 +16,7 @@ export async function GET() {
   const authErr = await requireSuperAdmin();
   if (authErr) return authErr;
 
-  const db = readDb();
+  const db = await readDb();
   const couples = db.couples.map(c => {
     // Expiration details
     const expiresAt = c.expiresAt ?? new Date(new Date(c.createdAt).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Groom and bride names are required' }, { status: 400 });
   }
 
-  const db = readDb();
+  const db = await readDb();
   const dateObj = weddingDate ? new Date(weddingDate) : new Date();
   const year = dateObj.getFullYear().toString();
   let loginId = customLoginId || generateCoupleId(groomName, brideName, year);
@@ -147,7 +147,7 @@ export async function POST(req: NextRequest) {
     db.payments.push(payment);
   }
 
-  writeDb(db);
+  await writeDb(db);
 
   return NextResponse.json({
     ok: true,

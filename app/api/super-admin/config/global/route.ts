@@ -11,10 +11,10 @@ export async function POST(req: Request) {
 
     const { globalTextOverrides, importedJsonBase } = await req.json();
 
-    const db = readDb();
+    const db = await readDb();
     if (globalTextOverrides !== undefined) db.globalTextOverrides = globalTextOverrides;
     if (importedJsonBase !== undefined) db.importedJsonBase = importedJsonBase;
-    writeDb(db);
+    await writeDb(db);
 
     return NextResponse.json({ 
       success: true, 

@@ -6,7 +6,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ cou
   const { coupleId } = await params;
 
 
-  const db = readDb();
+  const db = await readDb();
   const couple = db.couples.find(c => c.loginId === coupleId || c.id === coupleId);
   
   if (!couple) return NextResponse.json({ error: 'Not found' }, { status: 404 });

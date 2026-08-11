@@ -48,7 +48,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const { id } = await params;
   const body = await req.json();
-  const db = readDb();
+  const db = await readDb();
   const idx = db.couples.findIndex(c => c.id === id);
   if (idx === -1) return NextResponse.json({ error: 'Couple not found' }, { status: 404 });
 
@@ -78,7 +78,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     db.couples[idx].mustChangePassword = true; // force change on login
   }
 
-  writeDb(db);
+  await writeDb(db);
   return NextResponse.json({ ok: true, newPassword });
 }
 
@@ -88,7 +88,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   if (authErr) return authErr;
 
   const { id } = await params;
-  const db = readDb();
+  const db = await readDb();
   const idx = db.couples.findIndex(c => c.id === id);
   if (idx === -1) return NextResponse.json({ error: 'Couple not found' }, { status: 404 });
 
@@ -96,6 +96,6 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   deleteUploadedFiles(db.couples[idx].config);
 
   db.couples.splice(idx, 1);
-  writeDb(db);
+  await writeDb(db);
   return NextResponse.json({ ok: true });
 }

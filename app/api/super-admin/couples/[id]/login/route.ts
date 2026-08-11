@@ -16,7 +16,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (authErr) return authErr;
 
   const { id } = await params;
-  const db = readDb();
+  const db = await readDb();
   const couple = db.couples.find(c => c.id === id);
   if (!couple) {
     return NextResponse.json({ error: 'Couple not found' }, { status: 404 });

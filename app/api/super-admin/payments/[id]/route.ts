@@ -20,7 +20,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const body = await req.json();
     const { amount, packageName, notes } = body;
 
-    const db = readDb();
+    const db = await readDb();
     if (!db.payments) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     const paymentIndex = db.payments.findIndex(p => p.id === id);
@@ -32,7 +32,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (packageName !== undefined) db.payments[paymentIndex].packageName = packageName;
     if (notes !== undefined) db.payments[paymentIndex].notes = notes;
 
-    writeDb(db);
+    await writeDb(db);
 
     return NextResponse.json({ ok: true, payment: db.payments[paymentIndex] });
   } catch (err) {
@@ -47,7 +47,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
   const { id } = await params;
   try {
-    const db = readDb();
+    const db = await readDb();
     if (!db.payments) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     const initialLength = db.payments.length;
@@ -57,7 +57,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
       return NextResponse.json({ error: 'Payment not found' }, { status: 404 });
     }
 
-    writeDb(db);
+    await writeDb(db);
     return NextResponse.json({ ok: true });
   } catch (err) {
     return NextResponse.json({ error: 'Server error' }, { status: 500 });

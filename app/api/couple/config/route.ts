@@ -15,7 +15,7 @@ export async function GET() {
   const { error, coupleId } = await requireCouple();
   if (error) return error;
 
-  const db = readDb();
+  const db = await readDb();
   const couple = db.couples.find(c => c.id === coupleId);
   if (!couple) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
@@ -41,14 +41,14 @@ export async function PATCH(req: NextRequest) {
   if (error) return error;
 
   const body = await req.json() as Partial<WeddingConfig>;
-  const db = readDb();
+  const db = await readDb();
   const idx = db.couples.findIndex(c => c.id === coupleId);
   if (idx === -1) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   // Deep merge config
   const current = db.couples[idx].config;
   db.couples[idx].config = { ...current, ...body };
-  writeDb(db);
+  await writeDb(db);
 
   return NextResponse.json({ ok: true, config: db.couples[idx].config });
 }
