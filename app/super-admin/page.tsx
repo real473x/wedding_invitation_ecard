@@ -48,11 +48,17 @@ interface UserRow {
 }
 
 interface StorageInfo {
+  isVercel?: boolean;
+  environment?: string;
   isRedisConnected: boolean;
+  redisStatus?: string;
   dbJsonExists: boolean;
   dbJsonPath: string;
+  activeDbSource?: string;
   couplesCount: number;
+  superAdminConfigured?: boolean;
   superAdminUsername: string;
+  superAdminStatus?: string;
 }
 
 const THEME_LABELS: Record<string, string> = {
@@ -1066,42 +1072,37 @@ export default function SuperAdminDashboard() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
                   <div style={{ background: 'var(--admin-stat-bg)', border: '1px solid var(--admin-border)', borderRadius: '12px', padding: '1rem' }}>
                     <span style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)', display: 'block', marginBottom: '0.35rem' }}>
+                      Persekitaran Deployment
+                    </span>
+                    <strong style={{ fontSize: '0.95rem', color: storageInfo?.isVercel ? '#3b82f6' : '#a855f7' }}>
+                      {storageInfo?.environment || (storageInfo?.isVercel ? '☁️ Vercel Serverless' : '💻 Local Node.js')}
+                    </strong>
+                  </div>
+
+                  <div style={{ background: 'var(--admin-stat-bg)', border: '1px solid var(--admin-border)', borderRadius: '12px', padding: '1rem' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)', display: 'block', marginBottom: '0.35rem' }}>
                       {t.redisStatusLabel || 'Status Upstash Redis'}
                     </span>
                     <strong style={{ fontSize: '0.95rem', color: storageInfo?.isRedisConnected ? '#10b981' : '#f59e0b' }}>
-                      {storageInfo?.isRedisConnected ? (t.connected || '🟢 Berhubung (Active)') : (t.notConnected || '🟡 Tidak Berhubung (Local Fallback)')}
+                      {storageInfo?.redisStatus || (storageInfo?.isRedisConnected ? '🟢 Connected (Upstash Redis)' : '🟡 Not Connected (File Fallback)')}
                     </strong>
                   </div>
 
                   <div style={{ background: 'var(--admin-stat-bg)', border: '1px solid var(--admin-border)', borderRadius: '12px', padding: '1rem' }}>
                     <span style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)', display: 'block', marginBottom: '0.35rem' }}>
-                      {t.dbJsonStatusLabel || 'Status Fail db.json Local/Vercel'}
+                      Pangkalan Data Aktif (Active DB)
                     </span>
-                    <strong style={{ fontSize: '0.95rem', color: storageInfo?.dbJsonExists ? '#C9A84C' : '#10b981' }}>
-                      {storageInfo?.dbJsonExists ? (t.fileExists || '📁 Fail Wujud') : (t.fileDeleted || '🗑️ Fail Telah Dipadam / Pure Redis')}
-                    </strong>
-                    {storageInfo?.dbJsonExists && (
-                      <span style={{ display: 'block', fontSize: '0.72rem', color: 'var(--admin-text-muted)', marginTop: '0.25rem', fontFamily: 'monospace' }}>
-                        {storageInfo.dbJsonPath}
-                      </span>
-                    )}
-                  </div>
-
-                  <div style={{ background: 'var(--admin-stat-bg)', border: '1px solid var(--admin-border)', borderRadius: '12px', padding: '1rem' }}>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)', display: 'block', marginBottom: '0.35rem' }}>
-                      Nama Pengguna Super Admin
-                    </span>
-                    <strong style={{ fontSize: '0.95rem', color: '#C9A84C', fontFamily: 'monospace' }}>
-                      {storageInfo?.superAdminUsername || '-'}
+                    <strong style={{ fontSize: '0.95rem', color: '#C9A84C' }}>
+                      {storageInfo?.activeDbSource || 'Upstash Redis / File'}
                     </strong>
                   </div>
 
                   <div style={{ background: 'var(--admin-stat-bg)', border: '1px solid var(--admin-border)', borderRadius: '12px', padding: '1rem' }}>
                     <span style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)', display: 'block', marginBottom: '0.35rem' }}>
-                      Jumlah Rekod Pasangan
+                      Akaun Super Admin Aktif
                     </span>
-                    <strong style={{ fontSize: '0.95rem', color: 'var(--admin-text)' }}>
-                      {storageInfo?.couplesCount ?? 0}
+                    <strong style={{ fontSize: '0.95rem', color: storageInfo?.superAdminConfigured ? '#10b981' : '#ef4444' }}>
+                      {storageInfo?.superAdminStatus || (storageInfo?.superAdminUsername ? `🟢 Aktif (${storageInfo.superAdminUsername})` : '🔴 Belum Ditetapkan')}
                     </strong>
                   </div>
                 </div>
