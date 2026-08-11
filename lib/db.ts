@@ -393,7 +393,7 @@ const DEFAULT_CONFIG: WeddingConfig = {
 
 import { Redis } from '@upstash/redis';
 
-function getRedisClient(): Redis | null {
+export function getRedisClient(): Redis | null {
   const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
   if (url && token) {
@@ -662,12 +662,26 @@ export async function getStorageInfo() {
 
   const db = await readDb();
 
+  const isVercel = !!(process.env.VERCEL || process.env.NEXT_PUBLIC_VERCEL_ENV || process.env.VERCEL_ENV);
+  const environment = isVercel
+    ? `Vercel Serverless (${process.env.VERCEL_ENV || process.env.NODE_ENV || 'Production'})`
+    : `Local Node.js (${process.env.NODE_ENV || 'development'})`;
+
+  const superAdminConfigured = !!(db.superAdmin?.username && db.superAdmin?.passwordHash);
+  const superAdminUsername = db.superAdmin?.username || '';
+
   return {
+    isVercel,
+    environment,
     isRedisConnected,
+    redisStatus: isRedisConnected ? '🟢 Connected (Upstash Redis)' : '🟡 Not Connected (File Fallback)',
     dbJsonExists,
     dbJsonPath: defaultExists ? defaultPath : (tmpExists ? tmpPath : 'None'),
+    activeDbSource: isRedisConnected ? 'Upstash Redis (ewedding:db)' : (defaultExists ? defaultPath : (tmpExists ? tmpPath : 'In-Memory Singleton')),
     couplesCount: db.couples?.length || 0,
-    superAdminUsername: db.superAdmin?.username || '',
+    superAdminConfigured,
+    superAdminUsername,
+    superAdminStatus: superAdminConfigured ? `🟢 Active (${superAdminUsername})` : '🔴 Uninitialized (Requires Setup)',
   };
 }
 
