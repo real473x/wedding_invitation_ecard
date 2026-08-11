@@ -19,21 +19,20 @@ export async function GET() {
   const db = await readDb();
   const users = [];
 
-  // Superadmin User
-  const adminUsername = db.superAdmin?.username || process.env.SUPERADMIN_USERNAME || 'admin';
-  if (adminUsername) {
-    users.push({
-      id: 'superadmin',
-      role: 'superadmin',
-      username: adminUsername,
-      displayName: 'Super Admin',
-      isActive: true,
-      createdAt: null,
-      packageName: 'System Admin',
-      expiresAt: null,
-      statusMode: 'on',
-    });
-  }
+  // Superadmin User (Always included at index 0)
+  const isSuperAdminConfigured = !!(db.superAdmin?.username && db.superAdmin?.passwordHash);
+  users.push({
+    id: 'superadmin',
+    role: 'superadmin',
+    username: isSuperAdminConfigured ? db.superAdmin.username : '(Belum Ditetapkan)',
+    displayName: isSuperAdminConfigured ? 'Super Admin' : 'Super Admin (Perlu Tetapan)',
+    isActive: isSuperAdminConfigured,
+    createdAt: null,
+    packageName: 'System Admin',
+    expiresAt: null,
+    statusMode: isSuperAdminConfigured ? 'on' : 'off',
+    mustChangePassword: !isSuperAdminConfigured,
+  });
 
   // Couple Users
   (db.couples || []).forEach(c => {
