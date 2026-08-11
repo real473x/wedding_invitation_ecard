@@ -144,7 +144,11 @@ export default function SuperAdminLogin() {
           <p>{setupRequired ? (t.superAdminSetupTitle || '👑 Tetapan Pertama Super Admin') : t.superAdminTitle}</p>
         </div>
 
-        {successMessage ? (
+        {setupRequired === null ? (
+          <div className={styles.loading} style={{ padding: '2rem 0', textAlign: 'center' }}>
+            <span className={styles.spinner} /> Memuatkan...
+          </div>
+        ) : successMessage ? (
           <div style={{ textAlign: 'center', padding: '1rem 0' }}>
             <div className={styles.notice} style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.4)', color: '#10b981', padding: '1.25rem', borderRadius: '12px', marginBottom: '1rem', fontSize: '0.9rem', lineHeight: '1.6', fontWeight: 600 }}>
               {successMessage}
@@ -162,7 +166,7 @@ export default function SuperAdminLogin() {
             )}
 
             <div className="form-group" style={{ marginBottom: '1rem' }}>
-              <label>{t.superAdminUsernameLabel || 'Nama Pengguna Super Admin *'}</label>
+              <label>{setupRequired ? (t.superAdminUsernameLabel || 'Nama Pengguna Super Admin *') : (t.usernameHeader || 'Nama Pengguna')}</label>
               <input
                 type="text"
                 className="form-control"
