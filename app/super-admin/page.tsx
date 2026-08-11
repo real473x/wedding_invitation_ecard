@@ -1162,6 +1162,7 @@ export default function SuperAdminDashboard() {
       {showAddUserModal && (
         <AddUserModal
           t={t}
+          hasSuperAdmin={users.some(u => u.role === 'superadmin')}
           onClose={() => setShowAddUserModal(false)}
           onCreated={() => {
             setShowAddUserModal(false);
@@ -2025,7 +2026,7 @@ function FeatureTogglesModal({
   );
 }
 
-function AddUserModal({ onClose, onCreated, t }: { onClose: () => void; onCreated: () => void; t: Record<string, string> }) {
+function AddUserModal({ onClose, onCreated, t, hasSuperAdmin }: { onClose: () => void; onCreated: () => void; t: Record<string, string>; hasSuperAdmin: boolean; }) {
   const [role, setRole] = useState<'superadmin' | 'couple'>('couple');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -2068,8 +2069,15 @@ function AddUserModal({ onClose, onCreated, t }: { onClose: () => void; onCreate
             <label>{t.selectRoleLabel || 'Peranan Pengguna *'}</label>
             <select className="form-control" value={role} onChange={e => setRole(e.target.value as any)}>
               <option value="couple">{t.coupleAdminRole || '💍 Admin Pasangan'}</option>
-              <option value="superadmin">{t.superAdminRole || '👑 Super Admin'}</option>
+              <option value="superadmin" disabled={hasSuperAdmin}>
+                {t.superAdminRole || '👑 Super Admin'} {hasSuperAdmin ? '(Sudah Wujud — Had 1 Sahaja)' : ''}
+              </option>
             </select>
+            {hasSuperAdmin && (
+              <span style={{ fontSize: '0.75rem', color: '#f59e0b', marginTop: '4px', display: 'block' }}>
+                ⚠️ Hanya 1 akaun Super Admin dibenarkan dalam sistem.
+              </span>
+            )}
           </div>
 
           <div className="form-group">

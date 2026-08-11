@@ -16,7 +16,7 @@ export async function GET() {
     }
 
     const db = await readDb();
-    // Setup is required if either passwordHash or username is missing
+    // Setup is required ONLY if either username or passwordHash is completely missing/empty
     const setupRequired = !db.superAdmin?.passwordHash || !db.superAdmin?.username;
     return NextResponse.json({
       setupRequired,
@@ -38,29 +38,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Please enter password.' }, { status: 400 });
     }
 
-    // Check Vercel environment variables fallback first
-    const envUsername = process.env.SUPERADMIN_USERNAME;
-    const envPassword = process.env.SUPERADMIN_PASSWORD;
-    if (envUsername && envPassword && username) {
-      if (username.trim().toLowerCase() === envUsername.trim().toLowerCase() && password === envPassword) {
-        try {
-          const session = await getSuperAdminSession();
-          session.role = 'superadmin';
-          session.isLoggedIn = true;
-          await session.save();
-        } catch (e) {
-          console.warn('Session save failed in env auth mode:', e);
-        }
-        return NextResponse.json({ ok: true, username: envUsername });
-      }
+    if (!username || username.trim().length === 0) {
+      return NextResponse.json({ error: 'Please enter username.' }, { status: 400 });
     }
 
     const db = await readDb();
-    const isFirstTime = !db.superAdmin?.passwordHash || !db.superAdmin?.username;
+    const envUsername = process.env.SUPERADMIN_USERNAME;
+    const envPassword = process.env.SUPERADMIN_PASSWORD;
 
-    // First-time setup: if passwordHash or username is missing, register username and password
-    if (isFirstTime) {
-      if (!username || username.trim().length < 3) {
+    // Check if system is uninitialized (first-time setup)
+    const isUninitialized = (!db.superAdmin?.passwordHash || !db.superAdmin?.username) && (!envUsername || !envPassword);
+
+    // First-time setup: ONLY allowed if NO superadmin account exists in DB or ENV
+    if (isUninitialized) {
+      if (username.trim().length < 3) {
         return NextResponse.json({ error: 'Username must be at least 3 characters long.' }, { status: 400 });
       }
       if (password.length < 6) {
@@ -86,20 +77,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, firstTime: true, username: cleanUsername });
     }
 
-    // Normal login: verify username
-    if (!username || username.trim().length === 0) {
-      return NextResponse.json({ error: 'Please enter username.' }, { status: 400 });
-    }
-
+    // Normal Login Mode — Verify credentials strictly (NO registration bypass allowed)
     const inputUsername = username.trim().toLowerCase();
-    const storedUsername = (db.superAdmin.username || '').toLowerCase();
+    const storedUsername = (db.superAdmin?.username || '').toLowerCase();
 
-    if (inputUsername !== storedUsername) {
-      return NextResponse.json({ error: 'Invalid username or password.' }, { status: 401 });
+    let isDbValid = false;
+    if (db.superAdmin?.passwordHash && inputUsername === storedUsername) {
+      isDbValid = await verifyPassword(password, db.superAdmin.passwordHash);
     }
 
-    const valid = await verifyPassword(password, db.superAdmin.passwordHash);
-    if (!valid) {
+    let isEnvValid = false;
+    if (envUsername && envPassword) {
+      if (inputUsername === envUsername.trim().toLowerCase() && password === envPassword) {
+        isEnvValid = true;
+      }
+    }
+
+    if (!isDbValid && !isEnvValid) {
       return NextResponse.json({ error: 'Invalid username or password.' }, { status: 401 });
     }
 
@@ -112,7 +106,7 @@ export async function POST(req: NextRequest) {
       console.warn('Session save failed during login:', e);
     }
 
-    return NextResponse.json({ ok: true, username: db.superAdmin.username });
+    return NextResponse.json({ ok: true, username: isEnvValid ? envUsername : db.superAdmin.username });
   } catch (err: any) {
     console.error('POST /api/super-admin/login error:', err);
     return NextResponse.json(
