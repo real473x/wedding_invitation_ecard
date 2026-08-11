@@ -593,20 +593,26 @@ export async function writeDb(db: Database): Promise<void> {
       console.error('Redis write error:', err);
     }
   }
+
+  const defaultPath = path.join(process.cwd(), 'data', 'db.json');
   const targetPath = getDbFilePath();
+  const dataStr = JSON.stringify(db, null, 2);
+
   try {
     const dir = path.dirname(targetPath);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(targetPath, JSON.stringify(db, null, 2));
+    fs.writeFileSync(targetPath, dataStr);
   } catch (err: unknown) {
-    const fallbackPath = path.join('/tmp', 'db.json');
+    console.error('Failed to write DB to target path:', err);
+  }
+
+  // Sync to defaultPath if different and writable
+  if (targetPath !== defaultPath) {
     try {
-      const dir = path.dirname(fallbackPath);
+      const dir = path.dirname(defaultPath);
       if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-      fs.writeFileSync(fallbackPath, JSON.stringify(db, null, 2));
-    } catch (e) {
-      console.error('Failed to write DB to fallback path:', e);
-    }
+      fs.writeFileSync(defaultPath, dataStr);
+    } catch (_) {}
   }
 }
 

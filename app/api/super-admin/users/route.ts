@@ -66,6 +66,13 @@ export async function POST(req: NextRequest) {
     const db = await readDb();
 
     if (role === 'superadmin') {
+      if (db.superAdmin?.username && db.superAdmin?.passwordHash) {
+        return NextResponse.json(
+          { error: 'Only 1 Super Admin account is allowed in the system. Creating additional Super Admin accounts is strictly forbidden.' },
+          { status: 400 }
+        );
+      }
+
       if (!username || username.trim().length < 3) {
         return NextResponse.json({ error: 'Username must be at least 3 characters long.' }, { status: 400 });
       }
