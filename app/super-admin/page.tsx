@@ -269,7 +269,8 @@ export default function SuperAdminDashboard() {
 
   useEffect(() => {
     fetchCouples();
-  }, [fetchCouples]);
+    fetchUsers();
+  }, [fetchCouples, fetchUsers]);
 
   useEffect(() => {
     if (subTab === 'accounting' && payments.length === 0) {

@@ -565,26 +565,38 @@ function createFreshDb(): Database {
   return initial;
 }
 
+declare global {
+  var _cachedDb: Database | undefined;
+}
+
 export async function readDb(): Promise<Database> {
+  if (globalThis._cachedDb) {
+    return sanitizeAndUpgradeDb(globalThis._cachedDb);
+  }
+
   const redis = getRedisClient();
   if (redis) {
     try {
       let db = await redis.get<Database>(REDIS_KEY);
-      if (!db || typeof db !== 'object') {
-        db = createFreshDb();
-        await redis.set(REDIS_KEY, db);
+      if (db && typeof db === 'object') {
+        const sanitized = sanitizeAndUpgradeDb(db, async (updatedDb) => {
+          await redis.set(REDIS_KEY, updatedDb);
+        });
+        globalThis._cachedDb = sanitized;
+        return sanitized;
       }
-      return sanitizeAndUpgradeDb(db, async (updatedDb) => {
-        await redis.set(REDIS_KEY, updatedDb);
-      });
     } catch (err) {
       console.error('Redis read error, falling back to local file:', err);
     }
   }
-  return ensureDbFile();
+  const dbFromFile = ensureDbFile();
+  globalThis._cachedDb = dbFromFile;
+  return dbFromFile;
 }
 
 export async function writeDb(db: Database): Promise<void> {
+  globalThis._cachedDb = db;
+
   const redis = getRedisClient();
   if (redis) {
     try {
@@ -693,6 +705,8 @@ export async function dropAllData(): Promise<void> {
     globalTextOverrides: {},
   };
 
+  globalThis._cachedDb = resetDb;
+
   const redis = getRedisClient();
   if (redis) {
     try {
@@ -710,16 +724,12 @@ export async function dropAllData(): Promise<void> {
     const dir = path.dirname(defaultPath);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(defaultPath, dataStr);
-  } catch (e) {
-    console.warn('Unable to overwrite data/db.json:', e);
-  }
+  } catch (e) {}
 
   try {
     const dir = path.dirname(tmpPath);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(tmpPath, dataStr);
-  } catch (e) {
-    console.warn('Unable to overwrite /tmp/db.json:', e);
-  }
+  } catch (e) {}
 }
 
