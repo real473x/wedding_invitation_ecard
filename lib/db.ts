@@ -639,7 +639,9 @@ export async function getCoupleById(id: string): Promise<Couple | undefined> {
 
 export async function getCoupleByLoginId(loginId: string): Promise<Couple | undefined> {
   const db = await readDb();
-  return db.couples.find(c => c.loginId === loginId);
+  if (!loginId) return undefined;
+  const cleanId = loginId.trim().toLowerCase();
+  return db.couples.find(c => (c.loginId || '').trim().toLowerCase() === cleanId);
 }
 
 export async function getStorageInfo() {
