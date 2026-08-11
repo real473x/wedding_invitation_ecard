@@ -543,13 +543,35 @@ function ensureDbFile(): Database {
   });
 }
 
+function createFreshDb(): Database {
+  const initial: Database = {
+    superAdmin: { username: '', passwordHash: '' },
+    couples: [],
+    payments: [],
+    globalTextOverrides: {},
+  };
+  initial.couples.push({
+    id: 'demo',
+    loginId: 'demo',
+    passwordHash: '',
+    isActive: true,
+    createdAt: new Date().toISOString(),
+    config: getDefaultConfig(),
+    packageName: 'Demo Selamanya',
+    expiresAt: new Date(Date.now() + 3650 * 24 * 60 * 60 * 1000).toISOString(),
+    statusMode: 'on',
+    mustChangePassword: false,
+  });
+  return initial;
+}
+
 export async function readDb(): Promise<Database> {
   const redis = getRedisClient();
   if (redis) {
     try {
       let db = await redis.get<Database>(REDIS_KEY);
       if (!db || typeof db !== 'object') {
-        db = ensureDbFile();
+        db = createFreshDb();
         await redis.set(REDIS_KEY, db);
       }
       return sanitizeAndUpgradeDb(db, async (updatedDb) => {
