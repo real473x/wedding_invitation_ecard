@@ -37,6 +37,6 @@ export async function POST(req: NextRequest) {
     const fileUrl = `/uploads/${filename}`;
     return NextResponse.json({ ok: true, url: fileUrl });
   } catch (err) {
-    return NextResponse.json({ error: 'Ralat memuat naik fail.' }, { status: 500 });
+    return NextResponse.json({ error: 'File upload error.' }, { status: 500 });
   }
 }

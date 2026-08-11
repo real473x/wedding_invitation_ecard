@@ -52,8 +52,8 @@ export async function GET(req: NextRequest) {
       console.error('Shopee HTML scraping failed', err);
     }
 
-    return NextResponse.json({ error: 'Gagal mendapatkan gambar dari Shopee. Pastikan link sah.' }, { status: 422 });
+    return NextResponse.json({ error: 'Failed to fetch image from Shopee. Please ensure link is valid.' }, { status: 422 });
   } catch (err) {
-    return NextResponse.json({ error: 'Ralat dalaman pelayan.' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
   }
 }

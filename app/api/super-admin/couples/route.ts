@@ -76,39 +76,39 @@ export async function POST(req: NextRequest) {
   const defaultConfig = getDefaultConfig();
   defaultConfig.groomName = groomName;
   defaultConfig.brideName = brideName;
-  defaultConfig.groomFullName = groomName;
-  defaultConfig.brideFullName = brideName;
+  defaultConfig.groomFullName = `${groomName} bin Father`;
+  defaultConfig.brideFullName = `${brideName} binti Father`;
   defaultConfig.theme = theme || 'malay';
   defaultConfig.bankAccountName = `${groomName} / ${brideName}`;
   defaultConfig.contacts = [
-    { name: `${groomName} (Pengantin Lelaki)`, phone: '0123456789' },
-    { name: `${brideName} (Pengantin Perempuan)`, phone: '0198765432' },
+    { name: `${groomName} (Groom)`, phone: '0123456789' },
+    { name: `${brideName} (Bride)`, phone: '0198765432' },
   ];
 
   if (weddingDate) {
     defaultConfig.weddingDate = weddingDate;
-    const dayNames = ['Ahad', 'Isnin', 'Selasa', 'Rabu', 'Khamis', 'Jumaat', 'Sabtu'];
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const computedDay = dayNames[new Date(weddingDate).getDay()];
-    defaultConfig.weddingDay = computedDay || 'Sabtu';
+    defaultConfig.weddingDay = computedDay || 'Saturday';
   }
 
   // Calculate subscription & expiration
   let days = 30;
-  let pName = '1 Bulan';
+  let pName = '1 Month';
   let sMode: 'on' | 'off' | 'auto' = 'auto';
 
   if (packageKey === '3month') {
     days = 90;
-    pName = '3 Bulan';
+    pName = '3 Months';
   } else if (packageKey === '6month') {
     days = 180;
-    pName = '6 Bulan';
+    pName = '6 Months';
   } else if (packageKey === '1year') {
     days = 365;
-    pName = '1 Tahun';
+    pName = '1 Year';
   } else if (packageKey === 'unlimited') {
     days = 36500; // 100 years
-    pName = 'Unlimited';
+    pName = 'Unlimited (Forever)';
     sMode = 'on';
   } else if (packageKey === 'custom') {
     days = Number(customDays) || 30;

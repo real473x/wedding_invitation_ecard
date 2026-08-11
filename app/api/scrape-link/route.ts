@@ -66,8 +66,8 @@ export async function GET(req: NextRequest) {
       console.error('Generic HTML scraping failed', err);
     }
 
-    return NextResponse.json({ error: 'Sistem tidak dapat mengekstrak gambar secara automatik dari laman web ini. Sila muat naik gambar secara manual.' }, { status: 422 });
+    return NextResponse.json({ error: 'System could not extract image automatically from this website. Please upload image manually.' }, { status: 422 });
   } catch (err) {
-    return NextResponse.json({ error: 'Ralat dalaman pelayan.' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
   }
 }

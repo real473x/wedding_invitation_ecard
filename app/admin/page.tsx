@@ -211,10 +211,10 @@ export default function CoupleAdminPage() {
       if (res.ok && data.url) {
         update({ bankQrUrl: data.url });
       } else {
-        alert(data.error || 'Ralat muat naik.');
+        alert(data.error || 'Upload error.');
       }
     } catch {
-      alert('Gagal memuat naik gambar.');
+      alert('Failed to upload image.');
     } finally {
       setUploadingQr(false);
       e.target.value = '';
@@ -893,7 +893,7 @@ export default function CoupleAdminPage() {
                     )}
                     <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <label className="btn btn-sm" style={{ cursor: 'pointer', margin: 0, padding: '0.35rem 0.75rem', fontSize: '0.7rem', display: 'inline-flex', background: 'var(--color-primary)', color: 'var(--admin-text)', border: 'none' }}>
-                        {uploadingQr ? 'Memuat naik...' : '📁 Pilih Fail Gambar'}
+                        {uploadingQr ? (t.uploading || 'Uploading...') : (t.selectImageFile || '📁 Select Image File')}
                         <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleQrUpload} disabled={uploadingQr} />
                       </label>
                       {config.bankQrUrl && (
@@ -903,7 +903,7 @@ export default function CoupleAdminPage() {
                           style={{ padding: '0.35rem 0.75rem', fontSize: '0.7rem' }}
                           onClick={() => update({ bankQrUrl: '' })}
                         >
-                          Nyahaktif Gambar
+                          {t.disableImage || 'Disable Image'}
                         </button>
                       )}
                     </div>
@@ -915,7 +915,7 @@ export default function CoupleAdminPage() {
 
           {/* ── HADIAH ── */}
           {activeTab === 'hadiah' && (
-            <Section title="🎁 Senarai Hadiah">
+            <Section title={t.giftSection || '🎁 Gift Registry'}>
               <GiftManager t={t} gifts={config.gifts} onChange={g => update({ gifts: g })} />
             </Section>
           )}
@@ -951,7 +951,7 @@ export default function CoupleAdminPage() {
           <div className={styles.saveBar}>
             {activeTab !== 'akaun' && (
               <button onClick={save} disabled={saving || !dirty} className="btn btn-primary">
-                {saving ? 'Menyimpan...' : dirty ? '💾 Simpan Perubahan' : '✓ Tersimpan'}
+                {saving ? (t.saving || 'Saving...') : dirty ? (t.saveChanges || '💾 Save Changes') : (t.saved || '✓ Saved')}
               </button>
             )}
           </div>
@@ -1161,7 +1161,7 @@ function CoupleAccountTab({ packageName, expiresAt, daysRemaining, statusMode, l
           {success && <div style={{ color: '#4ade80', fontSize: '0.85rem', background: 'rgba(46,107,62,.15)', padding: '0.65rem 0.9rem', borderRadius: '8px' }}>{t.passChangedSuccess}</div>}
 
           <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '0.5rem' }} disabled={loading}>
-            {loading ? 'Mengemaskini...' : '✓ Tukar Kata Laluan'}
+            {loading ? (t.updating || 'Updating...') : (t.changePassBtn || '✓ Change Password')}
           </button>
         </form>
       </div>
@@ -1218,7 +1218,7 @@ function CouplePasswordChangeForm({ onSuccess, t }: { onSuccess: () => void; t: 
       {error && <div style={{ color: '#e87c6f', fontSize: '0.85rem', background: 'rgba(192,57,43,.1)', padding: '0.65rem 0.9rem', borderRadius: '8px' }}>{error}</div>}
 
       <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '0.5rem' }} disabled={loading}>
-        {loading ? 'Menukar...' : '✓ Tukar & Mula Setup'}
+        {loading ? (t.changing || 'Changing...') : (t.changeAndStartBtn || '✓ Change & Start Setup')}
       </button>
     </form>
   );
@@ -1278,10 +1278,10 @@ function PhotoUrlManager({ photos, onChange, t }: { photos: string[]; onChange: 
         if (res.ok && data.url) {
           uploadedUrls.push(data.url);
         } else {
-          alert(data.error || `Ralat muat naik ${file.name}`);
+          alert(data.error || `Upload error for ${file.name}`);
         }
       } catch {
-        alert(`Gagal memuat naik gambar: ${file.name}`);
+        alert(`Failed to upload image: ${file.name}`);
       }
     }
     if (uploadedUrls.length > 0) {
@@ -1554,10 +1554,10 @@ function GiftItemCard({ gift, index, onUpdate, onRemove, t }: {
       if (res.ok && data.url) {
         onUpdate('imageUrl', data.url);
       } else {
-        alert(data.error || 'Ralat muat naik.');
+        alert(data.error || 'Upload error.');
       }
     } catch {
-      alert('Gagal memuat naik gambar.');
+      alert('Failed to upload image.');
     } finally {
       setUploading(false);
     }
@@ -1575,16 +1575,16 @@ function GiftItemCard({ gift, index, onUpdate, onRemove, t }: {
       gap: '0.75rem'
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h5 style={{ margin: 0, color: '#C9A84C', fontSize: '0.85rem', fontWeight: 700 }}>Hadiah #{index + 1}</h5>
+        <h5 style={{ margin: 0, color: '#C9A84C', fontSize: '0.85rem', fontWeight: 700 }}>Gift #{index + 1}</h5>
         <button type="button" className="btn btn-sm btn-danger" style={{ padding: '0.2rem 0.5rem', fontSize: '0.7rem' }} onClick={onRemove}>{t.deleteBtn}</button>
       </div>
 
       {/* Name input (Full Width) */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-        <label style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)' }}>Nama Hadiah *</label>
+        <label style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)' }}>{t.giftNameLabel || 'Gift Name *'}</label>
         <input
           className="form-control"
-          placeholder="cth: Khind Air Fryer"
+          placeholder="e.g. Khind Air Fryer"
           value={gift.item}
           onChange={e => onUpdate('item', e.target.value)}
           required
@@ -1596,7 +1596,7 @@ function GiftItemCard({ gift, index, onUpdate, onRemove, t }: {
         {/* Link input with gear settings */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <label style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)' }}>Link Kedai (Pilihan)</label>
+            <label style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)' }}>{t.shopLinkLabel || 'Store Link (Optional)'}</label>
             {gift.link && gift.link.startsWith('http') && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                 <button
@@ -1615,7 +1615,7 @@ function GiftItemCard({ gift, index, onUpdate, onRemove, t }: {
                   onClick={handleFetchImage}
                   disabled={scrapeStatus !== 'idle'}
                 >
-                  {scrapeStatus === 'idle' && '🔄 Dapatkan Gambar'}
+                  {scrapeStatus === 'idle' && '🔄 Fetch Image'}
                   {scrapeStatus === 'loading' && '⏳...'}
                   {scrapeStatus === 'success' && '✅'}
                   {scrapeStatus === 'error' && '❌'}
@@ -1647,7 +1647,7 @@ function GiftItemCard({ gift, index, onUpdate, onRemove, t }: {
                   onChange={e => setUseFallback(e.target.checked)}
                   style={{ width: '12px', height: '12px', cursor: 'pointer' }}
                 />
-                Carian Awam
+                {t.publicSearch || 'Public Search'}
               </label>
             </div>
           )}
@@ -1656,7 +1656,7 @@ function GiftItemCard({ gift, index, onUpdate, onRemove, t }: {
         {/* Price input with gear settings */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <label style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)' }}>Harga (RM / Pilihan)</label>
+            <label style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)' }}>{t.priceOptional || 'Price (RM / Optional)'}</label>
             {gift.link && gift.link.startsWith('http') && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                 <button
@@ -1675,7 +1675,7 @@ function GiftItemCard({ gift, index, onUpdate, onRemove, t }: {
                   onClick={handleFetchPrice}
                   disabled={scrapePriceStatus !== 'idle'}
                 >
-                  {scrapePriceStatus === 'idle' && '🔄 Harga'}
+                  {scrapePriceStatus === 'idle' && '🔄 Fetch Price'}
                   {scrapePriceStatus === 'loading' && '⏳...'}
                   {scrapePriceStatus === 'success' && '✅'}
                   {scrapePriceStatus === 'error' && '❌'}
@@ -1694,7 +1694,7 @@ function GiftItemCard({ gift, index, onUpdate, onRemove, t }: {
           </div>
           <input
             className="form-control"
-            placeholder="cth: RM 150.00"
+            placeholder="e.g. 150.00"
             value={gift.price || ''}
             onChange={e => onUpdate('price', e.target.value)}
           />
@@ -1707,7 +1707,7 @@ function GiftItemCard({ gift, index, onUpdate, onRemove, t }: {
                   onChange={e => setUsePriceFallback(e.target.checked)}
                   style={{ width: '12px', height: '12px', cursor: 'pointer' }}
                 />
-                Carian Awam
+                {t.publicSearch || 'Public Search'}
               </label>
             </div>
           )}
@@ -1725,7 +1725,7 @@ function GiftItemCard({ gift, index, onUpdate, onRemove, t }: {
         )}
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <label className="btn btn-sm" style={{ cursor: 'pointer', margin: 0, padding: '0.35rem 0.75rem', fontSize: '0.7rem', display: 'inline-flex', background: 'var(--color-primary)', color: 'var(--admin-text)', border: 'none' }}>
-            {uploading ? 'Memuat naik...' : '📁 Pilih Fail Gambar'}
+            {uploading ? (t.uploading || 'Uploading...') : (t.selectImageFile || '📁 Select Image File')}
             <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} disabled={uploading} />
           </label>
           {gift.imageUrl && (
@@ -1735,7 +1735,7 @@ function GiftItemCard({ gift, index, onUpdate, onRemove, t }: {
               style={{ padding: '0.35rem 0.75rem', fontSize: '0.7rem' }}
               onClick={() => onUpdate('imageUrl', '')}
             >
-              Nyahaktif Gambar
+              {t.disableImage || 'Disable Image'}
             </button>
           )}
         </div>
@@ -1827,10 +1827,10 @@ function WishesRecordManager({ wishes, onRefresh, t, lang }: { wishes: Wish[]; o
       if (res.ok) {
         onRefresh();
       } else {
-        alert('Gagal mengemaskini status paparan ucapan');
+        alert('Failed to update wish visibility status');
       }
     } catch {
-      alert('Ralat sambungan');
+      alert('Connection error');
     }
   }
 
@@ -1849,7 +1849,7 @@ function WishesRecordManager({ wishes, onRefresh, t, lang }: { wishes: Wish[]; o
         setIsAddingWish(false);
         onRefresh();
       } else {
-        alert('Gagal menambah ucapan');
+        alert('Failed to add wish');
       }
     } finally {
       setSavingWish(false);
@@ -1871,7 +1871,7 @@ function WishesRecordManager({ wishes, onRefresh, t, lang }: { wishes: Wish[]; o
         setWishMsg('');
         onRefresh();
       } else {
-        alert('Gagal mengemaskini ucapan');
+        alert('Failed to update wish');
       }
     } finally {
       setSavingWish(false);
@@ -1879,16 +1879,16 @@ function WishesRecordManager({ wishes, onRefresh, t, lang }: { wishes: Wish[]; o
   }
 
   async function handleDeleteWish(id: string) {
-    if (!window.confirm(t.confirmDeleteWish || 'Adakah anda pasti mahu memadam ucapan ini? (Boleh dipadam jika mengandungi mesej tidak bersesuaian)')) return;
+    if (!window.confirm(t.confirmDeleteWish || 'Are you sure you want to delete this wish?')) return;
     try {
       const res = await fetch(`/api/couple/wishes?id=${id}`, { method: 'DELETE' });
       if (res.ok) {
         onRefresh();
       } else {
-        alert('Gagal memadam ucapan');
+        alert('Failed to delete wish');
       }
     } catch {
-      alert('Ralat memadam ucapan');
+      alert('Error deleting wish');
     }
   }
 
@@ -1944,7 +1944,7 @@ function WishesRecordManager({ wishes, onRefresh, t, lang }: { wishes: Wish[]; o
           </button>
         </div>
         <button className="btn btn-primary btn-sm" style={{ padding: '0.4rem 0.85rem' }} onClick={startAdd}>
-          {t.addWishBtn || '＋ Tambah Ucapan Manual'}
+          {t.addWishBtn || '＋ Add Manual Wish'}
         </button>
       </div>
 
@@ -1952,23 +1952,23 @@ function WishesRecordManager({ wishes, onRefresh, t, lang }: { wishes: Wish[]; o
       {(isAddingWish || editingWish) && (
         <div style={{ background: 'rgba(201,168,76,0.08)', border: '1px solid var(--admin-border)', borderRadius: '12px', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           <h5 style={{ margin: 0, color: '#C9A84C', fontSize: '0.88rem', fontWeight: 700 }}>
-            {editingWish ? (t.editWishTitle || '✏️ Kemaskini Ucapan Tetamu') : (t.addWishTitle || '＋ Tambah Ucapan Manual')}
+            {editingWish ? (t.editWishTitle || '✏️ Edit Guest Wish') : (t.addWishTitle || '＋ Add Manual Wish')}
           </h5>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-            <label style={{ fontSize: '0.74rem', color: 'var(--admin-text-muted)' }}>{t.guestNameLabel || 'Nama Tetamu'} *</label>
+            <label style={{ fontSize: '0.74rem', color: 'var(--admin-text-muted)' }}>{t.guestNameLabel || 'Guest Name'} *</label>
             <input
               className="form-control"
-              placeholder="cth: Ahmad Shah"
+              placeholder="e.g. Ahmad Shah"
               value={wishName}
               onChange={e => setWishName(e.target.value)}
             />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-            <label style={{ fontSize: '0.74rem', color: 'var(--admin-text-muted)' }}>{t.wishMsgLabel || 'Ucapan & Doa Restu'} *</label>
+            <label style={{ fontSize: '0.74rem', color: 'var(--admin-text-muted)' }}>{t.wishMsgLabel || 'Wish & Blessings'} *</label>
             <textarea
               className="form-control"
               rows={3}
-              placeholder="cth: Selamat pengantin baru, semoga kekal hingga ke anak cucu!"
+              placeholder="e.g. Congratulations! Wishing you endless happiness together!"
               value={wishMsg}
               onChange={e => setWishMsg(e.target.value)}
             />
@@ -1980,7 +1980,7 @@ function WishesRecordManager({ wishes, onRefresh, t, lang }: { wishes: Wish[]; o
               onClick={() => { setIsAddingWish(false); setEditingWish(null); }}
               disabled={savingWish}
             >
-              Batal
+              {t.cancelBtn || 'Cancel'}
             </button>
             <button
               type="button"
@@ -1988,7 +1988,7 @@ function WishesRecordManager({ wishes, onRefresh, t, lang }: { wishes: Wish[]; o
               onClick={editingWish ? handleUpdateWish : handleCreateWish}
               disabled={savingWish || !wishName.trim() || !wishMsg.trim()}
             >
-              {savingWish ? 'Menyimpan...' : 'Simpan Ucapan'}
+              {savingWish ? (t.saving || 'Saving...') : (t.saveWishBtn || 'Save Wish')}
             </button>
           </div>
         </div>
@@ -2059,7 +2059,7 @@ function WishesRecordManager({ wishes, onRefresh, t, lang }: { wishes: Wish[]; o
                     style={{ padding: '0.2rem 0.5rem', fontSize: '0.7rem' }}
                     onClick={() => handleDeleteWish(w.id)}
                   >
-                    🗑️ Padam
+                    {t.deleteBtn || '🗑️ Delete'}
                   </button>
                 </div>
               </div>
@@ -2102,8 +2102,8 @@ function BgImageRow({ label, sectionKey, currentUrl, onChange, t }: {
       const res = await fetch('/api/couple/upload', { method: 'POST', body: formData });
       const data = await res.json();
       if (res.ok && data.url) { onChange(data.url); setExpanded(false); }
-      else alert(data.error || 'Ralat memuat naik.');
-    } catch { alert('Gagal memuat naik fail.'); }
+      else alert(data.error || 'Upload error.');
+    } catch { alert('Failed to upload file.'); }
     finally { setUploading(false); }
   }
 
@@ -2148,7 +2148,7 @@ function BgImageRow({ label, sectionKey, currentUrl, onChange, t }: {
             <button type="button" className="btn btn-sm btn-danger" style={{ padding: '0.3rem 0.6rem', fontSize: '0.7rem' }} onClick={() => { onChange(''); setExpanded(false); }} title={t.restoreThemeDefaultTooltip}>{t.defaultDeleteBtn}</button>
           )}
           <button type="button" style={{ background: expanded ? 'rgba(201,168,76,.18)' : 'rgba(255,255,255,.06)', border: `1px solid ${expanded ? '#C9A84C' : 'rgba(255,255,255,.12)'}`, color: expanded ? '#C9A84C' : '#cbd5e1', borderRadius: '8px', padding: '0.3rem 0.7rem', fontSize: '0.72rem', cursor: 'pointer', fontFamily: 'inherit' }} onClick={() => setExpanded(v => !v)}>
-            {expanded ? '▲ Tutup' : '🖼️ Tukar'}
+            {expanded ? (t.close || '▲ Close') : (t.change || '🖼️ Change')}
           </button>
         </div>
       </div>
@@ -2166,7 +2166,7 @@ function BgImageRow({ label, sectionKey, currentUrl, onChange, t }: {
           {/* Upload tab */}
           {tab === 'upload' && (
             <label className="btn btn-primary" style={{ cursor: 'pointer', margin: 0, display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.55rem 1rem', fontSize: '0.82rem' }}>
-              {uploading ? '⏳ Memuat naik...' : '📁 Pilih Fail Gambar'}
+              {uploading ? (t.uploading || '⏳ Uploading...') : (t.selectImageFile || '📁 Select Image File')}
               <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} disabled={uploading} />
             </label>
           )}

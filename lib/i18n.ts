@@ -67,7 +67,7 @@ export const ADMIN_DICT = {
     enterPassword: 'Masukkan kata laluan...',
     adminLoginHint: 'ID Login dan kata laluan diberikan oleh pentadbir.',
     superAdminLoginHint: 'Kali pertama? Masukkan kata laluan pilihan anda untuk menetapkannya.',
-    superAdminLoginSuccess: '✅ Kata laluan telah ditetapkan. Anda telah log masuk.',
+    superAdminLoginSuccess: '✅ Log Masuk Berjaya!',
     connError: 'Ralat sambungan. Cuba semula.',
     financialLoading: 'Memuatkan data kewangan...',
     financialNoData: 'Tiada rekod bayaran dijumpai.',
@@ -134,6 +134,15 @@ export const ADMIN_DICT = {
     themeCollection: '✨ Koleksi Tema',
     mustChangePassTitle: '🔐 Wajib Tukar Kata Laluan Semasa',
     mustChangePassDesc: 'Bagi menjamin keselamatan laman web anda, sila tukar kata laluan sementara yang diberikan oleh pentadbir sebelum memulakan tetapan.',
+    saveWishBtn: 'Simpan Ucapan',
+    saveFeaturesBtn: '✓ Simpan Ciri',
+    changeAndStartBtn: '✓ Tukar & Mula Setup',
+    addWishBtn: '＋ Tambah Ucapan Manual',
+    editWishTitle: '✏️ Kemaskini Ucapan Tetamu',
+    addWishTitle: '＋ Tambah Ucapan Manual',
+    saved: '✓ Tersimpan',
+    selectImageFile: '📁 Pilih Fail Gambar',
+    disableImage: 'Nyahaktif Gambar',
 
     // Text Overrides Section
     textOverridesSection: '✏️ Sunting Teks Laman Web',
@@ -440,7 +449,7 @@ export const ADMIN_DICT = {
     enterPassword: 'Enter your password...',
     adminLoginHint: 'Login ID and password are provided by the administrator.',
     superAdminLoginHint: 'First time setup? Register your username and password.',
-    superAdminLoginSuccess: '✅ Super Admin credentials have been set. You are now logged in.',
+    superAdminLoginSuccess: '✅ Login Successful!',
     superAdminSetupTitle: '👑 Super Admin First-Time Setup',
     superAdminUsernameLabel: 'Super Admin Username *',
     enterSuperAdminUsername: 'Enter super admin username...',
@@ -517,6 +526,15 @@ export const ADMIN_DICT = {
     themeCollection: '✨ Theme Collection',
     mustChangePassTitle: '🔐 Must Change Current Password',
     mustChangePassDesc: 'To ensure the security of your website, please change the temporary password provided by the administrator before starting configuration.',
+    saveWishBtn: 'Save Wish',
+    saveFeaturesBtn: '✓ Save Features',
+    changeAndStartBtn: '✓ Change & Start Setup',
+    addWishBtn: '＋ Add Manual Wish',
+    editWishTitle: '✏️ Edit Guest Wish',
+    addWishTitle: '＋ Add Manual Wish',
+    saved: '✓ Saved',
+    selectImageFile: '📁 Select Image File',
+    disableImage: 'Disable Image',
 
     // Text Overrides Section
     textOverridesSection: '✏️ Edit Website Text',
@@ -775,9 +793,6 @@ export const ADMIN_DICT = {
     addWishlistItemTitle: '＋ Add Wishlist Item',
     claimGuestPrompt: 'Enter the guest name who claimed this gift:',
     // Wish Manager CRUD
-    addWishBtn: '＋ Add New Wish',
-    editWishTitle: '✏️ Edit Guest Wish',
-    addWishTitle: '＋ Add Manual Guest Wish',
     guestNameLabel: 'Guest Name',
     wishMsgLabel: 'Wish & Blessing Message',
     confirmDeleteWish: 'Are you sure you want to delete this wish record?',
@@ -1117,7 +1132,7 @@ export const ADMIN_TEXT_KEYS = [
   },
   {
     group: 'group_PanelAdmin',
-    keys: ['pkgSubLabel', 'expDateLabel', 'siteStatusLabel', 'changePassPanel', 'currPassLabel', 'newPassLabel', 'confirmPassLabel', 'passChangedSuccess', 'tempPassLabel', 'uploadGalleryBtn', 'uploading', 'manualUrlHint', 'addProgBtn', 'addContactBtn', 'addGiftBtn', 'giftNameLabel', 'shopLinkLabel', 'publicSearch', 'priceOptional', 'totalRsvpLabel', 'attendLabel', 'notAttendLabel', 'expectedGuestLabel', 'wishesLabel', 'refreshBtn', 'noRsvpYet', 'noWishesYet', 'defaultDeleteBtn', 'uploadBtn', 'urlLabel', 'themeCollection', 'mustChangePassTitle', 'mustChangePassDesc']
+    keys: ['pkgSubLabel', 'expDateLabel', 'siteStatusLabel', 'changePassPanel', 'currPassLabel', 'newPassLabel', 'confirmPassLabel', 'passChangedSuccess', 'tempPassLabel', 'uploadGalleryBtn', 'uploading', 'manualUrlHint', 'addProgBtn', 'addContactBtn', 'addGiftBtn', 'giftNameLabel', 'shopLinkLabel', 'publicSearch', 'priceOptional', 'totalRsvpLabel', 'attendLabel', 'notAttendLabel', 'expectedGuestLabel', 'wishesLabel', 'refreshBtn', 'noRsvpYet', 'noWishesYet', 'defaultDeleteBtn', 'uploadBtn', 'urlLabel', 'themeCollection', 'mustChangePassTitle', 'mustChangePassDesc', 'saveWishBtn', 'saveFeaturesBtn', 'changeAndStartBtn', 'addWishBtn', 'editWishTitle', 'addWishTitle', 'saved', 'selectImageFile', 'disableImage', 'giftSection', 'wishlistTabAll', 'editWishlistItemTitle', 'addWishlistItemTitle']
   },
   {
     group: 'group_Settings',

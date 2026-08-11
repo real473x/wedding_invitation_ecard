@@ -83,8 +83,8 @@ export async function GET(req: NextRequest) {
       console.error('Generic HTML pricing failed', err);
     }
 
-    return NextResponse.json({ error: 'Sistem tidak dapat mengekstrak harga dari URL ini. Sila masukkan harga secara manual.' }, { status: 422 });
+    return NextResponse.json({ error: 'System could not extract price from this URL. Please enter price manually.' }, { status: 422 });
   } catch (err) {
-    return NextResponse.json({ error: 'Ralat dalaman pelayan.' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
   }
 }

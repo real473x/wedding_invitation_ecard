@@ -68,7 +68,7 @@ export default function SuperAdminDashboard() {
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('admin-theme') || 'dark';
-    const savedLang = (localStorage.getItem('admin-lang') as Lang) || 'ms';
+    const savedLang = (localStorage.getItem('admin-lang') as Lang) || 'en';
     setTheme(savedTheme);
     setLang(savedLang);
     document.documentElement.setAttribute('data-theme', savedTheme);
@@ -1547,7 +1547,7 @@ function FeatureTogglesModal({
           <div className={styles.addModalFooter} style={{ marginTop: '1rem' }}>
             <button type="button" className="btn btn-outline" onClick={onClose}>{t.generalCancelBtn}</button>
             <button type="submit" className="btn btn-primary" disabled={loading}>
-              {loading ? 'Menyimpan...' : '✓ Simpan Ciri'}
+              {loading ? (t.saving || 'Saving...') : (t.saveFeaturesBtn || '✓ Save Features')}
             </button>
           </div>
         </form>

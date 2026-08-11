@@ -56,7 +56,7 @@ export default function LandingPage() {
         <div style={{ marginBottom: '2.5rem' }}>
           <span style={{ fontSize: '3rem', display: 'block', marginBottom: '0.5rem', animation: 'float 3s ease-in-out infinite' }}>💍</span>
           <h1 style={{ fontSize: '2.2rem', fontWeight: 800, color: '#C9A84C', letterSpacing: '-0.02em', margin: 0 }}>eWedding</h1>
-          <p style={{ color: 'var(--landing-text-muted)', fontSize: '0.95rem', marginTop: '0.5rem' }}>Kad Jemputan Digital &amp; Pengurusan Perkahwinan</p>
+          <p style={{ color: 'var(--landing-text-muted)', fontSize: '0.95rem', marginTop: '0.5rem' }}>Digital Wedding Invitation &amp; Management System</p>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -75,7 +75,7 @@ export default function LandingPage() {
             boxShadow: '0 4px 14px rgba(0,0,0,0.2)',
             transition: 'transform 0.2s'
           }}>
-            👁️ Lihat Laman Contoh (Demo)
+            👁️ View Sample Site (Demo)
           </Link>
 
           <Link href="/admin" style={{
@@ -93,7 +93,7 @@ export default function LandingPage() {
             textDecoration: 'none',
             transition: 'background 0.2s, color 0.2s'
           }}>
-            ⚙️ Urus Akaun Pengantin (Couple Admin)
+            ⚙️ Manage Couple Account (Couple Admin)
           </Link>
         </div>
       </div>
@@ -122,7 +122,7 @@ export default function LandingPage() {
         }}
         onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.08)'; }}
         onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
-        title="Aksesibiliti & Bantuan"
+        title="Accessibility & Settings"
       >
         ⚙️
       </button>
@@ -148,14 +148,14 @@ export default function LandingPage() {
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--landing-border)', paddingBottom: '0.5rem' }}>
             <h3 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: '#C9A84C', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              ⚙️ Aksesibiliti &amp; Bantuan
+              ⚙️ Accessibility &amp; Settings
             </h3>
             <button onClick={() => setWidgetOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--landing-text-muted)', cursor: 'pointer', fontSize: '1rem' }}>✕</button>
           </div>
 
           {/* Theme Selector */}
           <div>
-            <label style={{ fontSize: '0.75rem', fontWeight: 600, display: 'block', marginBottom: '0.35rem', color: 'var(--landing-text-muted)' }}>Pilihan Tema</label>
+            <label style={{ fontSize: '0.75rem', fontWeight: 600, display: 'block', marginBottom: '0.35rem', color: 'var(--landing-text-muted)' }}>Theme Selection</label>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <button 
                 onClick={() => toggleTheme('light')}
@@ -171,7 +171,7 @@ export default function LandingPage() {
                   cursor: 'pointer'
                 }}
               >
-                ☀️ Terang
+                ☀️ Light
               </button>
               <button 
                 onClick={() => toggleTheme('dark')}
@@ -187,15 +187,15 @@ export default function LandingPage() {
                   cursor: 'pointer'
                 }}
               >
-                🌙 Gelap
+                🌙 Dark
               </button>
             </div>
           </div>
 
           {/* Help Instructions */}
           <div style={{ fontSize: '0.75rem', borderTop: '1px solid var(--landing-border)', paddingTop: '0.65rem' }}>
-            <p style={{ fontWeight: 600, color: 'var(--landing-text-muted)', marginBottom: '0.2rem' }}>Cara Log Masuk Pasangan:</p>
-            <p style={{ margin: 0, lineHeight: 1.4, color: 'var(--landing-text-muted)' }}>Gunakan ID Pengguna &amp; Kata Laluan yang diberikan oleh pentadbir untuk mengakses Panel Pengantin.</p>
+            <p style={{ fontWeight: 600, color: 'var(--landing-text-muted)', marginBottom: '0.2rem' }}>Couple Login Guide:</p>
+            <p style={{ margin: 0, lineHeight: 1.4, color: 'var(--landing-text-muted)' }}>Use the Login ID &amp; Password provided by the administrator to access the Couple Panel.</p>
           </div>
 
           {/* Hidden Super Admin link */}
@@ -224,4 +224,3 @@ export default function LandingPage() {
     </div>
   );
 }
-

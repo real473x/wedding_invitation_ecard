@@ -236,20 +236,20 @@ export default function GiftPopup({ config, coupleId, onClose, onUpdateGifts, la
 
           {!showAdd ? (
             <button className="btn btn-outline" style={{ width: '100%', justifyContent: 'center' }} onClick={() => setShowAdd(true)}>
-              ＋ Cadang Hadiah Baru
+              ＋ Suggest New Gift
             </button>
           ) : (
             <form onSubmit={handleAddGift} style={{ background: 'var(--color-surface-2)', borderRadius: '12px', padding: '1rem', border: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', gap: '0.75rem', animation: 'fadeInUp 0.3s ease both' }}>
-              <p style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-text)', margin: 0 }}>Cadangkan hadiah baru:</p>
+              <p style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-text)', margin: 0 }}>{t.suggestGift || 'Suggest a new gift:'}</p>
               
               <div className="form-group" style={{ margin: 0 }}>
-                <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Nama Hadiah *</label>
-                <input className="form-control" placeholder="cth: Air Fryer" value={newItem} onChange={e => setNewItem(e.target.value)} required />
+                <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{t.giftName || 'Gift Name'} *</label>
+                <input className="form-control" placeholder="e.g. Air Fryer" value={newItem} onChange={e => setNewItem(e.target.value)} required />
               </div>
               
               <div className="form-group" style={{ margin: 0 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Link Kedai (optional)</label>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{t.shopLink || 'Store Link (Optional)'}</label>
                   {newLink && newLink.startsWith('http') && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                       <button
@@ -259,43 +259,17 @@ export default function GiftPopup({ config, coupleId, onClose, onUpdateGifts, la
                         onClick={handleFetchImage}
                         disabled={scrapeStatus !== 'idle'}
                       >
-                        {scrapeStatus === 'idle' && '🔄 Dapatkan Gambar dari Link'}
-                        {scrapeStatus === 'loading' && '⏳ Mendapatkan...'}
-                        {scrapeStatus === 'success' && '✅ Successful'}
-                        {scrapeStatus === 'error' && '❌ Error (Upload file manually)'}
-                      </button>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>|</span>
-                      <button
-                        type="button"
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: '0.85rem' }}
-                        onClick={() => setShowSettings(!showSettings)}
-                        title={t.configSearchTooltip}
-                      >
-                        ⚙️
+                        {scrapeStatus === 'loading' ? '⏳ Auto Fetching...' : scrapeStatus === 'success' ? '✓ Image Fetched!' : scrapeStatus === 'error' ? '❌ Image Not Found' : '✨ Auto Fetch Image'}
                       </button>
                     </div>
                   )}
                 </div>
-                <input className="form-control" placeholder="https://shopee.com.my/product-details..." value={newLink} onChange={e => setNewLink(e.target.value)} />
-                {showSettings && newLink && newLink.startsWith('http') && (
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.15rem' }}>
-                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.65rem', color: 'var(--color-text-muted)', cursor: 'pointer', margin: 0 }}>
-                      <input
-                        type="checkbox"
-                        checked={useFallback}
-                        onChange={e => setUseFallback(e.target.checked)}
-                        style={{ width: '12px', height: '12px', cursor: 'pointer' }}
-                      />
-                      Carian Awam (Mungkin tidak tepat)
-                    </label>
-                  </div>
-                )}
+                <input className="form-control" placeholder="https://shopee.com.my/item..." value={newLink} onChange={e => setNewLink(e.target.value)} />
               </div>
 
-              {/* Price field layout */}
               <div className="form-group" style={{ margin: 0 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Harga (RM / optional)</label>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{t.priceLabel || 'Price (RM / Optional)'}</label>
                   {newLink && newLink.startsWith('http') && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                       <button
@@ -305,46 +279,20 @@ export default function GiftPopup({ config, coupleId, onClose, onUpdateGifts, la
                         onClick={handleFetchPrice}
                         disabled={scrapePriceStatus !== 'idle'}
                       >
-                        {scrapePriceStatus === 'idle' && '🔄 Dapatkan Harga dari Link'}
-                        {scrapePriceStatus === 'loading' && '⏳ Mendapatkan...'}
-                        {scrapePriceStatus === 'success' && '✅ Successful'}
-                        {scrapePriceStatus === 'error' && '❌ Error (Key in manually)'}
-                      </button>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>|</span>
-                      <button
-                        type="button"
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: '0.85rem' }}
-                        onClick={() => setShowPriceSettings(!showPriceSettings)}
-                        title={t.configPriceSearchTooltip}
-                      >
-                        ⚙️
+                        {scrapePriceStatus === 'loading' ? '⏳ Fetching Price...' : scrapePriceStatus === 'success' ? '✓ Price Fetched!' : scrapePriceStatus === 'error' ? '❌ Price Not Found' : '✨ Auto Fetch Price'}
                       </button>
                     </div>
                   )}
                 </div>
-                <input className="form-control" placeholder="cth: RM 150.00" value={newPrice} onChange={e => setNewPrice(e.target.value)} />
-                {showPriceSettings && newLink && newLink.startsWith('http') && (
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.15rem' }}>
-                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.65rem', color: 'var(--color-text-muted)', cursor: 'pointer', margin: 0 }}>
-                      <input
-                        type="checkbox"
-                        checked={usePriceFallback}
-                        onChange={e => setUsePriceFallback(e.target.checked)}
-                        style={{ width: '12px', height: '12px', cursor: 'pointer' }}
-                      />
-                      Carian Awam (Mungkin tidak tepat)
-                    </label>
-                  </div>
-                )}
+                <input className="form-control" placeholder="e.g. 149.00" value={newPrice} onChange={e => setNewPrice(e.target.value)} />
               </div>
 
-              {/* Directly prompt image file upload */}
               <div className="form-group" style={{ margin: 0 }}>
-                <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '0.25rem' }}>Muat Naik Gambar Hadiah</label>
+                <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '0.25rem' }}>{t.uploadImage || 'Upload Gift Image'}</label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'var(--color-surface)', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
                   {imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={imageUrl} alt="Pratinjau Hadiah" style={{ width: 44, height: 44, borderRadius: '6px', objectFit: 'cover' }} />
+                    <img src={imageUrl} alt="Gift Preview" style={{ width: 44, height: 44, borderRadius: '6px', objectFit: 'cover' }} />
                   ) : (
                     <div style={{ width: 44, height: 44, borderRadius: '6px', background: 'var(--color-surface-2)', border: '1px dashed var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
                       🎁
@@ -352,7 +300,7 @@ export default function GiftPopup({ config, coupleId, onClose, onUpdateGifts, la
                   )}
                   <div style={{ flex: 1 }}>
                     <label className="btn btn-sm" style={{ cursor: 'pointer', margin: 0, padding: '0.35rem 0.75rem', fontSize: '0.7rem', display: 'inline-flex', background: 'var(--color-primary)', color: '#fff', border: 'none' }}>
-                      {uploading ? 'Memuat naik...' : '📁 Pilih Fail Gambar'}
+                      {uploading ? 'Uploading...' : (t.uploadImage || '📁 Upload Image File')}
                       <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} disabled={uploading} />
                     </label>
                   </div>
@@ -360,9 +308,9 @@ export default function GiftPopup({ config, coupleId, onClose, onUpdateGifts, la
               </div>
 
               <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
-                <button type="button" className="btn btn-sm btn-outline" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setShowAdd(false)}>Batal</button>
+                <button type="button" className="btn btn-sm btn-outline" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setShowAdd(false)}>Cancel</button>
                 <button type="submit" className="btn btn-sm btn-primary" style={{ flex: 1, justifyContent: 'center' }} disabled={adding || uploading}>
-                  {adding ? 'Menghantar...' : 'Hantar'}
+                  {adding ? (t.sending || 'Submitting...') : (t.submitGift || 'Submit')}
                 </button>
               </div>
             </form>
