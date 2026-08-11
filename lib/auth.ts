@@ -69,3 +69,19 @@ export function generatePassword(length = 10): string {
   const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
   return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
 }
+
+export async function destroyAllSessions(): Promise<void> {
+  try {
+    const s1 = await getSuperAdminSession();
+    s1.destroy();
+  } catch (_) {}
+  try {
+    const s2 = await getCoupleSession();
+    s2.destroy();
+  } catch (_) {}
+  try {
+    const s3 = await getSession();
+    s3.destroy();
+  } catch (_) {}
+}
+

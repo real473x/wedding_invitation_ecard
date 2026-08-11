@@ -34,6 +34,27 @@ interface PaymentRow {
   notes: string;
 }
 
+interface UserRow {
+  id: string;
+  role: 'superadmin' | 'couple';
+  username: string;
+  displayName: string;
+  isActive: boolean;
+  createdAt: string | null;
+  packageName: string;
+  expiresAt: string | null;
+  statusMode: 'on' | 'off' | 'auto';
+  mustChangePassword?: boolean;
+}
+
+interface StorageInfo {
+  isRedisConnected: boolean;
+  dbJsonExists: boolean;
+  dbJsonPath: string;
+  couplesCount: number;
+  superAdminUsername: string;
+}
+
 const THEME_LABELS: Record<string, string> = {
   malay:'Melayu',chinese:'Cina',indian:'India',iban:'Iban',
   kadazan:'Kadazan Dusun',kayan:'Kayan',bidayuh:'Bidayuh',
@@ -46,7 +67,20 @@ export default function SuperAdminDashboard() {
   const [payments, setPayments] = useState<PaymentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [paymentLoading, setPaymentLoading] = useState(true);
-  const [subTab, setSubTab] = useState<'couples' | 'accounting' | 'text'>('couples');
+  const [subTab, setSubTab] = useState<'couples' | 'users' | 'accounting' | 'storage' | 'text'>('couples');
+
+  const [users, setUsers] = useState<UserRow[]>([]);
+  const [userLoading, setUserLoading] = useState(true);
+  const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [editUser, setEditUser] = useState<UserRow | null>(null);
+  const [deleteUserConfirm, setDeleteUserConfirm] = useState<UserRow | null>(null);
+
+  const [storageInfo, setStorageInfo] = useState<StorageInfo | null>(null);
+  const [storageLoading, setStorageLoading] = useState(false);
+  const [showDeleteDbJsonModal, setShowDeleteDbJsonModal] = useState(false);
+  const [showSystemResetModal, setShowSystemResetModal] = useState(false);
+  const [resetConfirmInput, setResetConfirmInput] = useState('');
+  const [resettingSystem, setResettingSystem] = useState(false);
   
   const [showAddModal, setShowAddModal] = useState(false);
   const [showAddPaymentModal, setShowAddPaymentModal] = useState(false);
@@ -201,6 +235,38 @@ export default function SuperAdminDashboard() {
     setPaymentLoading(false);
   }, []);
 
+  const fetchUsers = useCallback(async () => {
+    setUserLoading(true);
+    try {
+      const res = await fetch('/api/super-admin/users');
+      if (res.status === 401) { router.push('/super-admin/login'); return; }
+      if (res.ok) {
+        const data = await res.json();
+        setUsers(data.users || []);
+      }
+    } catch (err) {
+      console.error('Fetch users error:', err);
+    } finally {
+      setUserLoading(false);
+    }
+  }, [router]);
+
+  const fetchStorageInfo = useCallback(async () => {
+    setStorageLoading(true);
+    try {
+      const res = await fetch('/api/super-admin/system/storage');
+      if (res.status === 401) { router.push('/super-admin/login'); return; }
+      if (res.ok) {
+        const data = await res.json();
+        setStorageInfo(data.info || null);
+      }
+    } catch (err) {
+      console.error('Fetch storage info error:', err);
+    } finally {
+      setStorageLoading(false);
+    }
+  }, [router]);
+
   useEffect(() => {
     fetchCouples();
   }, [fetchCouples]);
@@ -209,11 +275,100 @@ export default function SuperAdminDashboard() {
     if (subTab === 'accounting' && payments.length === 0) {
       fetchPayments();
     }
-  }, [subTab, fetchPayments, payments.length]);
+    if (subTab === 'users') {
+      fetchUsers();
+    }
+    if (subTab === 'storage') {
+      fetchStorageInfo();
+    }
+  }, [subTab, fetchPayments, fetchUsers, fetchStorageInfo, payments.length]);
 
   function showToast(msg: string) {
     setToast(msg);
     setTimeout(() => setToast(''), 3000);
+  }
+
+  async function handleDeleteUser(user: UserRow) {
+    if (user.role === 'superadmin') {
+      showToast('⚠️ Akaun Super Admin tidak boleh dipadam satu per satu. Guna Drop Process / Reset System.');
+      setDeleteUserConfirm(null);
+      return;
+    }
+    try {
+      const res = await fetch(`/api/super-admin/users/${user.id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setUsers(prev => prev.filter(u => u.id !== user.id));
+        showToast(t.userDeletedToast || 'Pengguna berjaya dipadam!');
+        setDeleteUserConfirm(null);
+        fetchCouples();
+      } else {
+        const data = await res.json();
+        showToast(`❌ Gagal: ${data.error || 'Unknown error'}`);
+      }
+    } catch {
+      showToast('❌ Ralat sambungan.');
+    }
+  }
+
+  async function handleResetUserPassword(user: UserRow) {
+    try {
+      const res = await fetch(`/api/super-admin/users/${user.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resetPassword: true }),
+      });
+      const data = await res.json();
+      if (res.ok && data.newPassword) {
+        setShowCredModal({ loginId: user.username, password: data.newPassword, id: user.id });
+        fetchUsers();
+      } else {
+        showToast(`❌ Gagal: ${data.error || 'Ralat'}`);
+      }
+    } catch {
+      showToast('❌ Ralat sambungan.');
+    }
+  }
+
+  async function handleDeleteDbJson() {
+    try {
+      const res = await fetch('/api/super-admin/system/storage', { method: 'DELETE' });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        showToast(t.dbJsonDeletedToast || 'Fail db.json telah dipadam! Sistem kini mengguna Vercel Redis.');
+        setShowDeleteDbJsonModal(false);
+        fetchStorageInfo();
+      } else {
+        showToast(`❌ Gagal: ${data.error || 'Ralat'}`);
+      }
+    } catch {
+      showToast('❌ Ralat sambungan.');
+    }
+  }
+
+  async function handleSystemReset() {
+    if (resetConfirmInput.trim().toUpperCase() !== 'RESET') {
+      showToast('⚠️ Sila taip RESET untuk mengesahkan.');
+      return;
+    }
+    setResettingSystem(true);
+    try {
+      const res = await fetch('/api/super-admin/system/reset', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        showToast(t.systemResetSuccessToast || 'Sistem telah di-set semula. Sila cipta akaun Super Admin baru.');
+        setShowSystemResetModal(false);
+        setTimeout(() => {
+          router.push('/super-admin/login');
+        }, 1500);
+      } else {
+        showToast(`❌ Gagal set semula: ${data.error || 'Ralat'}`);
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('❌ Ralat sambungan.');
+    } finally {
+      setResettingSystem(false);
+    }
   }
 
   async function handleStatusModeChange(id: string, mode: 'on' | 'off' | 'auto') {
@@ -369,8 +524,14 @@ export default function SuperAdminDashboard() {
           <button className={`${styles.subTabBtn} ${subTab === 'couples' ? styles.subTabActive : ''}`} onClick={() => { setSubTab('couples'); setSearch(''); }}>
             {t.couplesTab} ({couplesCount})
           </button>
+          <button className={`${styles.subTabBtn} ${subTab === 'users' ? styles.subTabActive : ''}`} onClick={() => { setSubTab('users'); setSearch(''); }}>
+            {t.usersTab || '👥 Pengurusan Pengguna'} ({users.length})
+          </button>
           <button className={`${styles.subTabBtn} ${subTab === 'accounting' ? styles.subTabActive : ''}`} onClick={() => { setSubTab('accounting'); setSearch(''); }}>
             {t.accountingTab} (RM {totalRevenue.toFixed(2)})
+          </button>
+          <button className={`${styles.subTabBtn} ${subTab === 'storage' ? styles.subTabActive : ''}`} onClick={() => { setSubTab('storage'); setSearch(''); }}>
+            {t.storageTab || '💾 Storan & Reset System'}
           </button>
           <button className={`${styles.subTabBtn} ${subTab === 'text' ? styles.subTabActive : ''}`} onClick={() => { setSubTab('text'); }}>
             {t.textTabLabel}
@@ -785,10 +946,318 @@ export default function SuperAdminDashboard() {
             </div>
           </div>
         )}
+
+        {subTab === 'users' && (
+          <>
+            {/* Stats */}
+            <div className={styles.statsRow}>
+              <div className={styles.stat}>
+                <span className={styles.statNum}>{users.length}</span>
+                <span className={styles.statLabel}>Jumlah Pengguna</span>
+              </div>
+              <div className={styles.stat}>
+                <span className={styles.statNum}>{users.filter(u => u.role === 'superadmin').length}</span>
+                <span className={styles.statLabel}>Super Admin</span>
+              </div>
+              <div className={styles.stat}>
+                <span className={styles.statNum}>{users.filter(u => u.role === 'couple').length}</span>
+                <span className={styles.statLabel}>Admin Pasangan</span>
+              </div>
+              <div className={styles.stat}>
+                <span className={styles.statNum}>{users.filter(u => u.isActive).length}</span>
+                <span className={styles.statLabel}>Akaun Aktif</span>
+              </div>
+            </div>
+
+            {/* Toolbar */}
+            <div className={styles.toolbar}>
+              <input
+                className={styles.searchInput}
+                placeholder={t.userSearchPlaceholder || '🔍 Cari pengguna, peranan, ID...'}
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+              <button className="btn btn-primary" onClick={() => setShowAddUserModal(true)}>
+                {t.addUserBtn || '＋ Tambah Pengguna Baru'}
+              </button>
+            </div>
+
+            {/* Table */}
+            {userLoading ? (
+              <div className={styles.loading}><span className={styles.spinner} />Memuatkan senarai pengguna...</div>
+            ) : (
+              <div className={styles.tableWrap}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th>{t.userRoleHeader || 'Peranan'}</th>
+                      <th>{t.usernameHeader || 'Nama Pengguna / Login ID'}</th>
+                      <th>{t.coupleHeader || 'Pengguna / Nama'}</th>
+                      <th>{t.packageHeader || 'Pakej / Info'}</th>
+                      <th>Status</th>
+                      <th>{t.actionsHeader || 'Tindakan'}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users
+                      .filter(u => `${u.username} ${u.displayName} ${u.role}`.toLowerCase().includes(search.toLowerCase()))
+                      .map(u => (
+                        <tr key={u.id} className={!u.isActive ? styles.rowInactive : ''}>
+                          <td>
+                            <span className={u.role === 'superadmin' ? styles.loginId : styles.themeBadge} style={u.role === 'superadmin' ? { background: 'rgba(201,168,76,0.2)', color: '#C9A84C', fontWeight: 700 } : {}}>
+                              {u.role === 'superadmin' ? (t.superAdminRole || '👑 Super Admin') : (t.coupleAdminRole || '💍 Admin Pasangan')}
+                            </span>
+                          </td>
+                          <td>
+                            <code className={styles.loginId}>{u.username}</code>
+                            {u.mustChangePassword && <span style={{ display: 'block', fontSize: '0.62rem', color: '#f59e0b', marginTop: '3px', fontWeight: 600 }}>[Wajib Tukar Pass]</span>}
+                          </td>
+                          <td>
+                            <div className={styles.coupleName}>{u.displayName}</div>
+                          </td>
+                          <td>
+                            <span style={{ fontSize: '0.82rem', color: 'var(--admin-text-muted)' }}>{u.packageName}</span>
+                          </td>
+                          <td>
+                            <span className={u.isActive ? styles.rsvpBadge : styles.themeBadge}>
+                              {u.isActive ? '✓ Aktif' : '✗ Tutup'}
+                            </span>
+                          </td>
+                          <td>
+                            <div className={styles.actions}>
+                              <button className={`btn btn-sm ${styles.btnReset}`} onClick={() => setEditUser(u)}>
+                                {t.updateBtn || '✏️ Kemaskini'}
+                              </button>
+                              <button className={`btn btn-sm ${styles.btnReset}`} onClick={() => handleResetUserPassword(u)}>
+                                {t.resetPassword || '🔑 Tukar Pass'}
+                              </button>
+                              {u.role === 'couple' && (
+                                <>
+                                  <button className={`btn btn-sm ${styles.btnView}`} onClick={() => handleEditCouple(u.id)}>
+                                    Editor
+                                  </button>
+                                  <button className={`btn btn-sm ${styles.logoutBtn}`} onClick={() => setDeleteUserConfirm(u)}>
+                                    Padam
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
+        )}
+
+        {subTab === 'storage' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {/* Status Card */}
+            <div style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '16px', padding: '1.5rem' }}>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#C9A84C', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                {t.storageStatusTitle || '⚡ Status Pangkalan Data & Storan (Database Backend)'}
+              </h3>
+              {storageLoading ? (
+                <div className={styles.loading}><span className={styles.spinner} />Memeriksa storan...</div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
+                  <div style={{ background: 'var(--admin-stat-bg)', border: '1px solid var(--admin-border)', borderRadius: '12px', padding: '1rem' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)', display: 'block', marginBottom: '0.35rem' }}>
+                      {t.redisStatusLabel || 'Status Upstash Redis'}
+                    </span>
+                    <strong style={{ fontSize: '0.95rem', color: storageInfo?.isRedisConnected ? '#10b981' : '#f59e0b' }}>
+                      {storageInfo?.isRedisConnected ? (t.connected || '🟢 Berhubung (Active)') : (t.notConnected || '🟡 Tidak Berhubung (Local Fallback)')}
+                    </strong>
+                  </div>
+
+                  <div style={{ background: 'var(--admin-stat-bg)', border: '1px solid var(--admin-border)', borderRadius: '12px', padding: '1rem' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)', display: 'block', marginBottom: '0.35rem' }}>
+                      {t.dbJsonStatusLabel || 'Status Fail db.json Local/Vercel'}
+                    </span>
+                    <strong style={{ fontSize: '0.95rem', color: storageInfo?.dbJsonExists ? '#C9A84C' : '#10b981' }}>
+                      {storageInfo?.dbJsonExists ? (t.fileExists || '📁 Fail Wujud') : (t.fileDeleted || '🗑️ Fail Telah Dipadam / Pure Redis')}
+                    </strong>
+                    {storageInfo?.dbJsonExists && (
+                      <span style={{ display: 'block', fontSize: '0.72rem', color: 'var(--admin-text-muted)', marginTop: '0.25rem', fontFamily: 'monospace' }}>
+                        {storageInfo.dbJsonPath}
+                      </span>
+                    )}
+                  </div>
+
+                  <div style={{ background: 'var(--admin-stat-bg)', border: '1px solid var(--admin-border)', borderRadius: '12px', padding: '1rem' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)', display: 'block', marginBottom: '0.35rem' }}>
+                      Nama Pengguna Super Admin
+                    </span>
+                    <strong style={{ fontSize: '0.95rem', color: '#C9A84C', fontFamily: 'monospace' }}>
+                      {storageInfo?.superAdminUsername || '-'}
+                    </strong>
+                  </div>
+
+                  <div style={{ background: 'var(--admin-stat-bg)', border: '1px solid var(--admin-border)', borderRadius: '12px', padding: '1rem' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)', display: 'block', marginBottom: '0.35rem' }}>
+                      Jumlah Rekod Pasangan
+                    </span>
+                    <strong style={{ fontSize: '0.95rem', color: 'var(--admin-text)' }}>
+                      {storageInfo?.couplesCount ?? 0}
+                    </strong>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Vercel Redis Option Card */}
+            <div style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: '16px', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <h4 style={{ margin: '0 0 0.4rem', fontSize: '1rem', color: 'var(--admin-text)' }}>
+                  ☁️ Pilihan Penggunaan Database Vercel Redis
+                </h4>
+                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--admin-text-muted)', lineHeight: '1.6' }}>
+                  Secara lalai, aplikasi membaca dan menulis fail <code>db.json</code> pada pelayan dan Vercel serverless. Anda boleh memadam fail <code>db.json</code> local pada bila-bila masa untuk memastikan deployment Vercel anda menggunakan pangkalan data <strong>Vercel Redis sahaja</strong>.
+                </p>
+              </div>
+
+              <div>
+                <button
+                  className="btn btn-outline"
+                  style={{ borderColor: 'rgba(239, 68, 68, 0.4)', color: '#f87171' }}
+                  onClick={() => setShowDeleteDbJsonModal(true)}
+                  disabled={!storageInfo?.dbJsonExists}
+                >
+                  {t.deleteDbJsonBtn || '🗑️ Padam db.json Local (Guna Vercel Redis Sahaja)'}
+                </button>
+              </div>
+            </div>
+
+            {/* Danger Zone: Drop Process & Reset System */}
+            <div style={{ background: 'rgba(239, 68, 68, 0.05)', border: '2px dashed rgba(239, 68, 68, 0.35)', borderRadius: '16px', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <h4 style={{ margin: '0 0 0.4rem', fontSize: '1.05rem', color: '#f87171', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  {t.systemResetTitle || '🔥 Drop Process & Set Semula Sistem (Start from Scratch)'}
+                </h4>
+                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--admin-text-muted)', lineHeight: '1.6' }}>
+                  {t.systemResetDesc || 'Padam semua pangkalan data (Redis & db.json), log keluar semua sesi pengguna, mengosongkan cache, dan memulakan semula sistem dari awal. Anda akan diminta mencipta Username & Password Super Admin baru.'}
+                </p>
+              </div>
+
+              <div>
+                <button
+                  className="btn"
+                  style={{ background: '#ef4444', color: '#ffffff', fontWeight: 700, padding: '0.65rem 1.2rem', borderRadius: '10px' }}
+                  onClick={() => { setResetConfirmInput(''); setShowSystemResetModal(true); }}
+                >
+                  {t.systemResetBtn || '🔥 Drop Data & Set Semula Sistem'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Add Couple Modal */}
       {showAddModal && <AddCoupleModal t={t} onClose={() => setShowAddModal(false)} onCreated={(cred) => { setShowAddModal(false); setShowCredModal(cred); fetchCouples(); }} />}
+
+      {/* Add User Modal */}
+      {showAddUserModal && (
+        <AddUserModal
+          t={t}
+          onClose={() => setShowAddUserModal(false)}
+          onCreated={() => {
+            setShowAddUserModal(false);
+            fetchUsers();
+            fetchCouples();
+            showToast(t.userCreatedToast || 'Pengguna berjaya dicipta!');
+          }}
+        />
+      )}
+
+      {/* Edit User Modal */}
+      {editUser && (
+        <EditUserModal
+          t={t}
+          user={editUser}
+          onClose={() => setEditUser(null)}
+          onUpdated={() => {
+            setEditUser(null);
+            fetchUsers();
+            fetchCouples();
+            showToast(t.userUpdatedToast || 'Pengguna berjaya dikemaskini!');
+          }}
+        />
+      )}
+
+      {/* Delete User Confirmation Modal */}
+      {deleteUserConfirm && (
+        <div className="popup-overlay" onClick={() => setDeleteUserConfirm(null)}>
+          <div className={styles.confirmModal} onClick={e => e.stopPropagation()}>
+            <h3>⚠️ Padam Pengguna?</h3>
+            <p>
+              {t.confirmDeleteUserPrompt || 'Adakah anda pasti untuk memadam akaun pengguna ini?'} (<strong>{deleteUserConfirm.username}</strong>)
+            </p>
+            <div className={styles.confirmBtns}>
+              <button className="btn btn-outline" onClick={() => setDeleteUserConfirm(null)}>{t.cancelBtn || 'Batal'}</button>
+              <button className="btn btn-primary" style={{ background: '#ef4444', borderColor: '#ef4444' }} onClick={() => handleDeleteUser(deleteUserConfirm)}>
+                {t.confirmDeleteBtn || 'Ya, Padam'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete db.json Modal */}
+      {showDeleteDbJsonModal && (
+        <div className="popup-overlay" onClick={() => setShowDeleteDbJsonModal(false)}>
+          <div className={styles.confirmModal} onClick={e => e.stopPropagation()}>
+            <h3>{t.confirmDeleteDbJsonTitle || '⚠️ Padam Fail db.json Local?'}</h3>
+            <p>
+              {t.confirmDeleteDbJsonDesc || 'Tindakan ini akan memadam fail db.json pada pelayan. Pastikan pangkalan data Vercel Redis anda telah aktif.'}
+            </p>
+            <div className={styles.confirmBtns}>
+              <button className="btn btn-outline" onClick={() => setShowDeleteDbJsonModal(false)}>{t.cancelBtn || 'Batal'}</button>
+              <button className="btn btn-primary" style={{ background: '#ef4444', borderColor: '#ef4444' }} onClick={handleDeleteDbJson}>
+                Padam db.json
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* System Reset Modal */}
+      {showSystemResetModal && (
+        <div className="popup-overlay" onClick={() => setShowSystemResetModal(false)}>
+          <div className={styles.confirmModal} style={{ maxWidth: '440px' }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ color: '#ef4444' }}>🔥 Sahkan Drop & Reset System</h3>
+            <p style={{ fontSize: '0.85rem' }}>
+              Tindakan ini akan memadam <strong>semua data</strong>, membuang fail <code>db.json</code> &amp; Redis DB data, memutus log keluar semua sesi pengguna, dan memulakan semula sistem dari awal.
+            </p>
+            <div style={{ margin: '1rem 0' }}>
+              <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--admin-text-muted)', marginBottom: '0.4rem', textAlign: 'left' }}>
+                {t.confirmResetPrompt || 'Sila taip RESET untuk mengesahkan pemadaman:'}
+              </label>
+              <input
+                className="form-control"
+                type="text"
+                placeholder="Taip RESET..."
+                value={resetConfirmInput}
+                onChange={e => setResetConfirmInput(e.target.value)}
+                style={{ textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700 }}
+              />
+            </div>
+            <div className={styles.confirmBtns}>
+              <button className="btn btn-outline" onClick={() => setShowSystemResetModal(false)}>{t.cancelBtn || 'Batal'}</button>
+              <button
+                className="btn btn-primary"
+                style={{ background: '#ef4444', borderColor: '#ef4444', opacity: resetConfirmInput.trim().toUpperCase() === 'RESET' ? 1 : 0.5 }}
+                disabled={resetConfirmInput.trim().toUpperCase() !== 'RESET' || resettingSystem}
+                onClick={handleSystemReset}
+              >
+                {resettingSystem ? 'Memproses Drop Reset...' : '🔥 Sahkan Drop & Reset System'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Edit Couple Modal */}
       {editCouple && (
@@ -1548,6 +2017,186 @@ function FeatureTogglesModal({
             <button type="button" className="btn btn-outline" onClick={onClose}>{t.generalCancelBtn}</button>
             <button type="submit" className="btn btn-primary" disabled={loading}>
               {loading ? (t.saving || 'Saving...') : (t.saveFeaturesBtn || '✓ Save Features')}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function AddUserModal({ onClose, onCreated, t }: { onClose: () => void; onCreated: () => void; t: Record<string, string> }) {
+  const [role, setRole] = useState<'superadmin' | 'couple'>('couple');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [groomName, setGroomName] = useState('');
+  const [brideName, setBrideName] = useState('');
+  const [weddingDate, setWeddingDate] = useState('');
+  const [packageName, setPackageName] = useState('30 Hari');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch('/api/super-admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role, username, password, groomName, brideName, weddingDate, packageName }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || 'Ralat berlaku.'); return; }
+      onCreated();
+    } catch {
+      setError('Ralat sambungan.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="popup-overlay" onClick={onClose}>
+      <div className={styles.addModal} style={{ maxWidth: '480px' }} onClick={e => e.stopPropagation()}>
+        <div className={styles.addModalHeader}>
+          <h3>{t.createUserModalTitle || '➕ Cipta Pengguna Baru'}</h3>
+          <button className="popup-close" onClick={onClose}>✕</button>
+        </div>
+        <form onSubmit={handleSubmit} className={styles.addForm}>
+          <div className="form-group">
+            <label>{t.selectRoleLabel || 'Peranan Pengguna *'}</label>
+            <select className="form-control" value={role} onChange={e => setRole(e.target.value as any)}>
+              <option value="couple">{t.coupleAdminRole || '💍 Admin Pasangan'}</option>
+              <option value="superadmin">{t.superAdminRole || '👑 Super Admin'}</option>
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label>Nama Pengguna / Login ID {role === 'superadmin' ? '*' : '(Pilihan)'}</label>
+            <input className="form-control" type="text" placeholder="Masukkan nama pengguna..." value={username} onChange={e => setUsername(e.target.value)} required={role === 'superadmin'} />
+          </div>
+
+          <div className="form-group">
+            <label>Kata Laluan {role === 'superadmin' ? '*' : '(Pilihan)'}</label>
+            <input className="form-control" type="password" placeholder="Masukkan kata laluan..." value={password} onChange={e => setPassword(e.target.value)} required={role === 'superadmin'} />
+          </div>
+
+          {role === 'couple' && (
+            <>
+              <div className={styles.formRow}>
+                <div className="form-group">
+                  <label>{t.groomNameLabel || 'Nama Pengantin Lelaki *'}</label>
+                  <input className="form-control" type="text" placeholder="cth: Adam" value={groomName} onChange={e => setGroomName(e.target.value)} required />
+                </div>
+                <div className="form-group">
+                  <label>{t.brideNameLabel || 'Nama Pengantin Perempuan *'}</label>
+                  <input className="form-control" type="text" placeholder="cth: Hawa" value={brideName} onChange={e => setBrideName(e.target.value)} required />
+                </div>
+              </div>
+
+              <div className={styles.formRow}>
+                <div className="form-group">
+                  <label>{t.weddingDateLabel || 'Tarikh Perkahwinan'}</label>
+                  <input className="form-control" type="date" value={weddingDate} onChange={e => setWeddingDate(e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label>{t.packageLabel || 'Pakej'}</label>
+                  <input className="form-control" type="text" value={packageName} onChange={e => setPackageName(e.target.value)} />
+                </div>
+              </div>
+            </>
+          )}
+
+          {error && <div style={{ color: '#e87c6f', fontSize: '0.85rem', background: 'rgba(192,57,43,.1)', padding: '0.6rem', borderRadius: '8px' }}>{error}</div>}
+
+          <div className={styles.addModalFooter}>
+            <button type="button" className="btn btn-outline" onClick={onClose}>{t.cancelBtn || 'Batal'}</button>
+            <button type="submit" className="btn btn-primary" disabled={loading}>
+              {loading ? (t.creatingStatus || 'Mencipta...') : '✓ Cipta Pengguna'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function EditUserModal({ user, onClose, onUpdated, t }: { user: UserRow; onClose: () => void; onUpdated: () => void; t: Record<string, string> }) {
+  const [username, setUsername] = useState(user.username || '');
+  const [password, setPassword] = useState('');
+  const [packageName, setPackageName] = useState(user.packageName || '');
+  const [statusMode, setStatusMode] = useState<'on' | 'off' | 'auto'>(user.statusMode || 'auto');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/super-admin/users/${user.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username,
+          password: password || undefined,
+          packageName: user.role === 'couple' ? packageName : undefined,
+          statusMode: user.role === 'couple' ? statusMode : undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || 'Ralat'); return; }
+      onUpdated();
+    } catch {
+      setError('Ralat sambungan.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="popup-overlay" onClick={onClose}>
+      <div className={styles.addModal} style={{ maxWidth: '440px' }} onClick={e => e.stopPropagation()}>
+        <div className={styles.addModalHeader}>
+          <h3>{t.editUserModalTitle || '✏️ Kemaskini Akaun Pengguna'}</h3>
+          <button className="popup-close" onClick={onClose}>✕</button>
+        </div>
+        <form onSubmit={handleSubmit} className={styles.addForm}>
+          <div className="form-group">
+            <label>Nama Pengguna / Login ID *</label>
+            <input className="form-control" type="text" value={username} onChange={e => setUsername(e.target.value)} required />
+          </div>
+
+          <div className="form-group">
+            <label>Kata Laluan Baru (Kosongkan jika tidak tukar)</label>
+            <input className="form-control" type="password" placeholder="Masukkan kata laluan baru..." value={password} onChange={e => setPassword(e.target.value)} />
+          </div>
+
+          {user.role === 'couple' && (
+            <>
+              <div className="form-group">
+                <label>Pakej Langganan</label>
+                <input className="form-control" type="text" value={packageName} onChange={e => setPackageName(e.target.value)} />
+              </div>
+
+              <div className="form-group">
+                <label>Status Mode</label>
+                <select className="form-control" value={statusMode} onChange={e => setStatusMode(e.target.value as any)}>
+                  <option value="auto">Auto (Mengikut Tarikh Luput)</option>
+                  <option value="on">On (Sentiasa Aktif)</option>
+                  <option value="off">Off (Sentiasa Nyahaktif)</option>
+                </select>
+              </div>
+            </>
+          )}
+
+          {error && <div style={{ color: '#e87c6f', fontSize: '0.85rem', background: 'rgba(192,57,43,.1)', padding: '0.6rem', borderRadius: '8px' }}>{error}</div>}
+
+          <div className={styles.addModalFooter}>
+            <button type="button" className="btn btn-outline" onClick={onClose}>{t.cancelBtn || 'Batal'}</button>
+            <button type="submit" className="btn btn-primary" disabled={loading}>
+              {loading ? (t.savingStatus || 'Menyimpan...') : '✓ Kemaskini'}
             </button>
           </div>
         </form>

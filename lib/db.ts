@@ -623,3 +623,86 @@ export async function getCoupleByLoginId(loginId: string): Promise<Couple | unde
   const db = await readDb();
   return db.couples.find(c => c.loginId === loginId);
 }
+
+export async function getStorageInfo() {
+  const redis = getRedisClient();
+  let isRedisConnected = false;
+  if (redis) {
+    try {
+      await redis.ping();
+      isRedisConnected = true;
+    } catch (_) {
+      isRedisConnected = false;
+    }
+  }
+
+  const defaultPath = path.join(process.cwd(), 'data', 'db.json');
+  const tmpPath = path.join('/tmp', 'db.json');
+  const defaultExists = fs.existsSync(defaultPath);
+  const tmpExists = fs.existsSync(tmpPath);
+  const dbJsonExists = defaultExists || tmpExists;
+
+  const db = await readDb();
+
+  return {
+    isRedisConnected,
+    dbJsonExists,
+    dbJsonPath: defaultExists ? defaultPath : (tmpExists ? tmpPath : 'None'),
+    couplesCount: db.couples?.length || 0,
+    superAdminUsername: db.superAdmin?.username || '',
+  };
+}
+
+export function deleteLocalDbFile(): boolean {
+  let deletedAny = false;
+  const defaultPath = path.join(process.cwd(), 'data', 'db.json');
+  const tmpPath = path.join('/tmp', 'db.json');
+
+  try {
+    if (fs.existsSync(defaultPath)) {
+      fs.unlinkSync(defaultPath);
+      deletedAny = true;
+    }
+  } catch (e) {
+    console.warn('Unable to delete data/db.json:', e);
+  }
+
+  try {
+    if (fs.existsSync(tmpPath)) {
+      fs.unlinkSync(tmpPath);
+      deletedAny = true;
+    }
+  } catch (e) {
+    console.warn('Unable to delete /tmp/db.json:', e);
+  }
+
+  return deletedAny;
+}
+
+export async function dropAllData(): Promise<void> {
+  deleteLocalDbFile();
+
+  const redis = getRedisClient();
+  if (redis) {
+    try {
+      await redis.del(REDIS_KEY);
+    } catch (e) {
+      console.error('Failed to delete Redis key ewedding:db:', e);
+    }
+  }
+
+  // Set fresh uninitialized DB state
+  const resetDb: Database = {
+    superAdmin: { username: '', passwordHash: '' },
+    couples: [],
+    payments: [],
+    globalTextOverrides: {},
+  };
+
+  if (redis) {
+    try {
+      await redis.set(REDIS_KEY, resetDb);
+    } catch (_) {}
+  }
+}
+
