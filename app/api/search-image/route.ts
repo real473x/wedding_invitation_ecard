@@ -28,8 +28,8 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ error: 'Tiada gambar ditemui dalam carian awam.' }, { status: 422 });
+    return NextResponse.json({ error: 'No image found in public search.' }, { status: 422 });
   } catch (err) {
-    return NextResponse.json({ error: 'Ralat dalaman pelayan.' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
   }
 }

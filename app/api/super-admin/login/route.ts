@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     const { username, password } = body;
 
     if (!password) {
-      return NextResponse.json({ error: 'Sila masukkan kata laluan.' }, { status: 400 });
+      return NextResponse.json({ error: 'Please enter password.' }, { status: 400 });
     }
 
     // Check Vercel environment variables fallback first
@@ -61,10 +61,10 @@ export async function POST(req: NextRequest) {
     // First-time setup: if passwordHash or username is missing, register username and password
     if (isFirstTime) {
       if (!username || username.trim().length < 3) {
-        return NextResponse.json({ error: 'Nama pengguna mestilah sekurang-kurangnya 3 aksara.' }, { status: 400 });
+        return NextResponse.json({ error: 'Username must be at least 3 characters long.' }, { status: 400 });
       }
       if (password.length < 6) {
-        return NextResponse.json({ error: 'Kata laluan mestilah sekurang-kurangnya 6 aksara.' }, { status: 400 });
+        return NextResponse.json({ error: 'Password must be at least 6 characters long.' }, { status: 400 });
       }
 
       const cleanUsername = username.trim();
@@ -88,19 +88,19 @@ export async function POST(req: NextRequest) {
 
     // Normal login: verify username
     if (!username || username.trim().length === 0) {
-      return NextResponse.json({ error: 'Sila masukkan nama pengguna.' }, { status: 400 });
+      return NextResponse.json({ error: 'Please enter username.' }, { status: 400 });
     }
 
     const inputUsername = username.trim().toLowerCase();
     const storedUsername = (db.superAdmin.username || '').toLowerCase();
 
     if (inputUsername !== storedUsername) {
-      return NextResponse.json({ error: 'Nama pengguna atau kata laluan tidak sah.' }, { status: 401 });
+      return NextResponse.json({ error: 'Invalid username or password.' }, { status: 401 });
     }
 
     const valid = await verifyPassword(password, db.superAdmin.passwordHash);
     if (!valid) {
-      return NextResponse.json({ error: 'Nama pengguna atau kata laluan tidak sah.' }, { status: 401 });
+      return NextResponse.json({ error: 'Invalid username or password.' }, { status: 401 });
     }
 
     try {
@@ -116,7 +116,7 @@ export async function POST(req: NextRequest) {
   } catch (err: any) {
     console.error('POST /api/super-admin/login error:', err);
     return NextResponse.json(
-      { error: err?.message ? `Ralat pelayan: ${err.message}` : 'Ralat pelayan. Sila cuba semula.' },
+      { error: err?.message ? `Server error: ${err.message}` : 'Server error. Please try again.' },
       { status: 500 }
     );
   }

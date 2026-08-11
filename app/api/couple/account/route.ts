@@ -18,21 +18,21 @@ export async function PATCH(req: NextRequest) {
   try {
     const { currentPassword, newPassword } = await req.json();
     if (!currentPassword || !newPassword) {
-      return NextResponse.json({ error: 'Sila isi kata laluan semasa dan kata laluan baru.' }, { status: 400 });
+      return NextResponse.json({ error: 'Please enter current password and new password.' }, { status: 400 });
     }
 
     if (newPassword.length < 6) {
-      return NextResponse.json({ error: 'Kata laluan baru mestilah sekurang-kurangnya 6 aksara.' }, { status: 400 });
+      return NextResponse.json({ error: 'New password must be at least 6 characters long.' }, { status: 400 });
     }
 
     const db = readDb();
     const idx = db.couples.findIndex(c => c.id === coupleId);
-    if (idx === -1) return NextResponse.json({ error: 'Akaun tidak dijumpai.' }, { status: 404 });
+    if (idx === -1) return NextResponse.json({ error: 'Account not found.' }, { status: 404 });
 
     // Verify current password
     const valid = await verifyPassword(currentPassword, db.couples[idx].passwordHash);
     if (!valid) {
-      return NextResponse.json({ error: 'Kata laluan semasa tidak betul.' }, { status: 400 });
+      return NextResponse.json({ error: 'Current password is incorrect.' }, { status: 400 });
     }
 
     // Update with new password & clear force flag
@@ -42,6 +42,6 @@ export async function PATCH(req: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    return NextResponse.json({ error: 'Ralat pelayan. Cuba semula.' }, { status: 500 });
+    return NextResponse.json({ error: 'Server error. Please try again.' }, { status: 500 });
   }
 }

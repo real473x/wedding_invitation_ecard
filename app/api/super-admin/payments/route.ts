@@ -67,6 +67,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true, payment: newPayment });
   } catch (err) {
-    return NextResponse.json({ error: 'Ralat pelayan. Cuba semula.' }, { status: 500 });
+    return NextResponse.json({ error: 'Server error. Please try again.' }, { status: 500 });
   }
 }

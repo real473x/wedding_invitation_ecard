@@ -11,15 +11,15 @@ export default function SuperAdminLogin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [setupRequired, setSetupRequired] = useState<boolean | null>(null);
-  const [registeredUsername, setRegisteredUsername] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [theme, setTheme] = useState('dark');
-  const [lang, setLang] = useState<Lang>('ms');
+  const [lang, setLang] = useState<Lang>('en');
   const [globalTextOverrides, setGlobalTextOverrides] = useState<Record<string, string>>({});
   const router = useRouter();
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('admin-theme') || 'dark';
-    const savedLang = (localStorage.getItem('admin-lang') as Lang) || 'ms';
+    const savedLang = (localStorage.getItem('admin-lang') as Lang) || 'en';
     setTheme(savedTheme);
     setLang(savedLang);
     document.documentElement.setAttribute('data-theme', savedTheme);
@@ -78,13 +78,17 @@ export default function SuperAdminLogin() {
         return;
       }
 
-      if (data?.firstTime || setupRequired) {
+      if (data?.firstTime) {
         const adminUser = data?.username || username;
-        setRegisteredUsername(adminUser);
+        const msg = t.superAdminSetupSuccess
+          ? t.superAdminSetupSuccess.replace('{username}', adminUser)
+          : `✅ Nama pengguna ${adminUser} telah didaftarkan sebagai Super Admin untuk sistem ini!`;
+        setSuccessMessage(msg);
         setTimeout(() => {
           router.push('/super-admin');
-        }, 1800);
+        }, 1500);
       } else {
+        // Normal login: Redirect immediately to dashboard without showing setup/password text
         router.push('/super-admin');
       }
     } catch (err) {
@@ -94,12 +98,6 @@ export default function SuperAdminLogin() {
       setLoading(false);
     }
   }
-
-  const successBanner = registeredUsername ? (
-    t.superAdminSetupSuccess
-      ? t.superAdminSetupSuccess.replace('{username}', registeredUsername)
-      : `✅ Nama pengguna ${registeredUsername} telah didaftarkan sebagai Super Admin untuk sistem ini!`
-  ) : '';
 
   return (
     <div className={styles.page}>
@@ -146,10 +144,10 @@ export default function SuperAdminLogin() {
           <p>{setupRequired ? (t.superAdminSetupTitle || '👑 Tetapan Pertama Super Admin') : t.superAdminTitle}</p>
         </div>
 
-        {registeredUsername ? (
+        {successMessage ? (
           <div style={{ textAlign: 'center', padding: '1rem 0' }}>
-            <div className={styles.notice} style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.4)', color: '#10b981', padding: '1.25rem', borderRadius: '12px', marginBottom: '1rem', fontSize: '0.9rem', lineHeight: '1.6' }}>
-              {successBanner}
+            <div className={styles.notice} style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.4)', color: '#10b981', padding: '1.25rem', borderRadius: '12px', marginBottom: '1rem', fontSize: '0.9rem', lineHeight: '1.6', fontWeight: 600 }}>
+              {successMessage}
             </div>
             <p style={{ fontSize: '0.85rem', color: 'var(--admin-text-muted)' }}>
               Memuatkan Dashboard Super Admin... ⌛
@@ -160,9 +158,6 @@ export default function SuperAdminLogin() {
             {setupRequired && (
               <div className={styles.notice} style={{ background: 'rgba(201, 168, 76, 0.15)', border: '1px solid rgba(201, 168, 76, 0.3)', color: '#C9A84C', padding: '0.85rem', borderRadius: '10px', fontSize: '0.82rem', lineHeight: '1.5', marginBottom: '1rem' }}>
                 👋 {t.superAdminLoginHint || 'Sila daftarkan Nama Pengguna dan Kata Laluan Super Admin anda untuk memulakan sistem.'}
-                <div style={{ marginTop: '8px', paddingTop: '6px', borderTop: '1px dashed rgba(201, 168, 76, 0.3)', fontSize: '0.78rem', opacity: 0.9 }}>
-                  💡 <strong>Deployment Vercel:</strong> Tetapkan <code>SUPERADMIN_USERNAME</code> &amp; <code>SUPERADMIN_PASSWORD</code> dalam Vercel Environment Variables supaya akaun kekal di semua peranti (Laptop &amp; Telefon).
-                </div>
               </div>
             )}
 

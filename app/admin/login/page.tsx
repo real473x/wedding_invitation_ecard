@@ -10,13 +10,13 @@ export default function CoupleAdminLogin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [theme, setTheme] = useState('dark');
-  const [lang, setLang] = useState<Lang>('ms');
+  const [lang, setLang] = useState<Lang>('en');
   const [globalTextOverrides, setGlobalTextOverrides] = useState<Record<string, string>>({});
   const router = useRouter();
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('admin-theme') || 'dark';
-    const savedLang = (localStorage.getItem('admin-lang') as Lang) || 'ms';
+    const savedLang = (localStorage.getItem('admin-lang') as Lang) || 'en';
     setTheme(savedTheme);
     setLang(savedLang);
     document.documentElement.setAttribute('data-theme', savedTheme);

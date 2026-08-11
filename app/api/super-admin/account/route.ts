@@ -29,7 +29,7 @@ export async function PATCH(req: NextRequest) {
   try {
     const { currentPassword, newUsername, newPassword } = await req.json();
     if (!currentPassword) {
-      return NextResponse.json({ error: 'Sila isi kata laluan semasa untuk pengesahan.' }, { status: 400 });
+      return NextResponse.json({ error: 'Please enter your current password for verification.' }, { status: 400 });
     }
 
     const db = readDb();
@@ -37,19 +37,19 @@ export async function PATCH(req: NextRequest) {
     // Verify current password
     const valid = await verifyPassword(currentPassword, db.superAdmin.passwordHash);
     if (!valid) {
-      return NextResponse.json({ error: 'Kata laluan semasa tidak betul.' }, { status: 400 });
+      return NextResponse.json({ error: 'Current password is incorrect.' }, { status: 400 });
     }
 
     if (newUsername) {
       if (newUsername.trim().length < 3) {
-        return NextResponse.json({ error: 'Nama pengguna mestilah sekurang-kurangnya 3 aksara.' }, { status: 400 });
+        return NextResponse.json({ error: 'Username must be at least 3 characters long.' }, { status: 400 });
       }
       db.superAdmin.username = newUsername.trim();
     }
 
     if (newPassword) {
       if (newPassword.length < 6) {
-        return NextResponse.json({ error: 'Kata laluan baru mestilah sekurang-kurangnya 6 aksara.' }, { status: 400 });
+        return NextResponse.json({ error: 'New password must be at least 6 characters long.' }, { status: 400 });
       }
       db.superAdmin.passwordHash = await hashPassword(newPassword);
     }
@@ -58,6 +58,6 @@ export async function PATCH(req: NextRequest) {
 
     return NextResponse.json({ ok: true, username: db.superAdmin.username });
   } catch (err) {
-    return NextResponse.json({ error: 'Ralat pelayan. Cuba semula.' }, { status: 500 });
+    return NextResponse.json({ error: 'Server error. Please try again.' }, { status: 500 });
   }
 }

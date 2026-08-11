@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     const db = readDb();
     const idx = db.couples.findIndex(c => c.id === coupleId || c.loginId === coupleId);
     if (idx === -1) {
-      return NextResponse.json({ error: 'Pasangan tidak ditemui.' }, { status: 404 });
+      return NextResponse.json({ error: 'Couple not found.' }, { status: 404 });
     }
 
     // Save the suggested gifts
@@ -27,6 +27,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    return NextResponse.json({ error: 'Ralat menyimpan cadangan hadiah.' }, { status: 500 });
+    return NextResponse.json({ error: 'Error saving gift registry.' }, { status: 500 });
   }
 }
