@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
   const { loginId, password } = await req.json();
   if (!loginId || !password) return NextResponse.json({ error: 'Login ID and password required' }, { status: 400 });
 
-  const couple = getCoupleByLoginId(loginId);
+  const couple = await getCoupleByLoginId(loginId);
   if (!couple) return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
   if (!couple.isActive) return NextResponse.json({ error: 'Your invitation site is currently inactive. Please contact the administrator.' }, { status: 403 });
 

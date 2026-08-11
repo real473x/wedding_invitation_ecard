@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
   const session = await getCoupleSession();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const db = readDb();
+  const db = await readDb();
   const couple = db.couples.find(c => c.id === session.coupleId);
   if (!couple) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Name and message required' }, { status: 400 });
   }
 
-  const db = readDb();
+  const db = await readDb();
   const idx = db.couples.findIndex(c => c.id === session.coupleId);
   if (idx === -1) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     db.couples[idx].config.wishes = [];
   }
   db.couples[idx].config.wishes.push(newWish);
-  writeDb(db);
+  await writeDb(db);
 
   return NextResponse.json({ ok: true, wish: newWish });
 }
@@ -57,7 +57,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'ID required' }, { status: 400 });
   }
 
-  const db = readDb();
+  const db = await readDb();
   const idx = db.couples.findIndex(c => c.id === session.coupleId);
   if (idx === -1) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
@@ -71,7 +71,7 @@ export async function PATCH(req: NextRequest) {
     ...(message !== undefined ? { message: message.trim() } : {}),
     ...(isHidden !== undefined ? { isHidden: Boolean(isHidden) } : {}),
   };
-  writeDb(db);
+  await writeDb(db);
 
   return NextResponse.json({ ok: true, wish: db.couples[idx].config.wishes[wishIdx] });
 }
@@ -85,12 +85,12 @@ export async function DELETE(req: NextRequest) {
   const id = searchParams.get('id');
   if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
 
-  const db = readDb();
+  const db = await readDb();
   const idx = db.couples.findIndex(c => c.id === session.coupleId);
   if (idx === -1) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   db.couples[idx].config.wishes = (db.couples[idx].config.wishes || []).filter(w => w.id !== id);
-  writeDb(db);
+  await writeDb(db);
 
   return NextResponse.json({ ok: true });
 }

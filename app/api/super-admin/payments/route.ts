@@ -16,7 +16,7 @@ export async function GET() {
   const authErr = await requireSuperAdmin();
   if (authErr) return authErr;
 
-  const db = readDb();
+  const db = await readDb();
   const payments = db.payments ?? [];
   
   // Sort payments by date descending
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Jumlah bayaran mestilah melebihi 0.' }, { status: 400 });
     }
 
-    const db = readDb();
+    const db = await readDb();
     
     // Find couple name if coupleId is provided, or default to general
     let coupleName = 'Bayaran Am';
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
       db.payments = [];
     }
     db.payments.push(newPayment);
-    writeDb(db);
+    await writeDb(db);
 
     return NextResponse.json({ ok: true, payment: newPayment });
   } catch (err) {

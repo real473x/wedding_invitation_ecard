@@ -15,7 +15,7 @@ export async function GET() {
       });
     }
 
-    const db = readDb();
+    const db = await readDb();
     // Setup is required if either passwordHash or username is missing
     const setupRequired = !db.superAdmin?.passwordHash || !db.superAdmin?.username;
     return NextResponse.json({
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const db = readDb();
+    const db = await readDb();
     const isFirstTime = !db.superAdmin?.passwordHash || !db.superAdmin?.username;
 
     // First-time setup: if passwordHash or username is missing, register username and password
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
         username: cleanUsername,
         passwordHash: await hashPassword(password),
       };
-      writeDb(db);
+      await writeDb(db);
 
       try {
         const session = await getSuperAdminSession();

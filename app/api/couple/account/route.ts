@@ -25,7 +25,7 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'New password must be at least 6 characters long.' }, { status: 400 });
     }
 
-    const db = readDb();
+    const db = await readDb();
     const idx = db.couples.findIndex(c => c.id === coupleId);
     if (idx === -1) return NextResponse.json({ error: 'Account not found.' }, { status: 404 });
 
@@ -38,7 +38,7 @@ export async function PATCH(req: NextRequest) {
     // Update with new password & clear force flag
     db.couples[idx].passwordHash = await hashPassword(newPassword);
     db.couples[idx].mustChangePassword = false;
-    writeDb(db);
+    await writeDb(db);
 
     return NextResponse.json({ ok: true });
   } catch (err) {

@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Format data tidak sah.' }, { status: 400 });
     }
 
-    const db = readDb();
+    const db = await readDb();
     const idx = db.couples.findIndex(c => c.id === coupleId || c.loginId === coupleId);
     if (idx === -1) {
       return NextResponse.json({ error: 'Couple not found.' }, { status: 404 });
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
 
     // Save the suggested gifts
     db.couples[idx].config.gifts = gifts;
-    writeDb(db);
+    await writeDb(db);
 
     return NextResponse.json({ ok: true });
   } catch (err) {

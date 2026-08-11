@@ -8,13 +8,13 @@ export async function POST(req: NextRequest) {
   const coupleId = searchParams.get('coupleId');
   if (!coupleId) return NextResponse.json({ error: 'coupleId required' }, { status: 400 });
 
-  const couple = getCoupleById(coupleId);
+  const couple = await getCoupleById(coupleId);
   if (!couple || !couple.isActive) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   const body = await req.json();
   const { name, phone, attending, paxCount, wishes: wishText, type } = body;
 
-  const db = readDb();
+  const db = await readDb();
   const idx = db.couples.findIndex(c => c.id === coupleId);
 
   if (type === 'wish') {
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
       createdAt: new Date().toISOString(),
     };
     db.couples[idx].config.wishes.push(wish);
-    writeDb(db);
+    await writeDb(db);
     return NextResponse.json({ ok: true, wish });
   }
 
@@ -47,6 +47,6 @@ export async function POST(req: NextRequest) {
     const wish: Wish = { id: uuidv4(), name, message: wishText, createdAt: new Date().toISOString() };
     db.couples[idx].config.wishes.push(wish);
   }
-  writeDb(db);
+  await writeDb(db);
   return NextResponse.json({ ok: true, rsvp });
 }

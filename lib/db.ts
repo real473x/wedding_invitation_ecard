@@ -391,50 +391,29 @@ const DEFAULT_CONFIG: WeddingConfig = {
   textOverrides: {},
 };
 
-function ensureDbFile(): Database {
-  const dbPath = getDbFilePath();
-  const dir = path.dirname(dbPath);
-  try {
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  } catch (_) {}
+import { Redis } from '@upstash/redis';
 
-  if (!fs.existsSync(dbPath)) {
-    const initial: Database = {
-      superAdmin: { username: '', passwordHash: '' },
-      couples: [],
-      payments: [],
-      globalTextOverrides: {},
-    };
-    // Seed default demo couple into initial database
-    initial.couples.push({
-      id: 'demo',
-      loginId: 'demo',
-      passwordHash: '', // no direct login password (managed via superadmin)
-      isActive: true,
-      createdAt: new Date().toISOString(),
-      config: getDefaultConfig(),
-      packageName: 'Demo Selamanya',
-      expiresAt: new Date(Date.now() + 3650 * 24 * 60 * 60 * 1000).toISOString(), // 10 years
-      statusMode: 'on',
-      mustChangePassword: false,
-    });
-    try { fs.writeFileSync(dbPath, JSON.stringify(initial, null, 2)); } catch (_) {}
-    return initial;
+function getRedisClient(): Redis | null {
+  const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (url && token) {
+    return new Redis({ url, token });
   }
+  return null;
+}
 
-  let db: Database;
-  try {
-    db = JSON.parse(fs.readFileSync(dbPath, 'utf-8')) as Database;
-  } catch (e) {
-    db = {
-      superAdmin: { username: '', passwordHash: '' },
-      couples: [],
-      payments: [],
-      globalTextOverrides: {},
-    };
-  }
+const REDIS_KEY = 'ewedding:db';
 
+function sanitizeAndUpgradeDb(db: Database, onSave?: (updated: Database) => void | Promise<void>): Database {
   let modified = false;
+  if (!db.superAdmin) {
+    db.superAdmin = { username: '', passwordHash: '' };
+    modified = true;
+  }
+  if (!db.couples) {
+    db.couples = [];
+    modified = true;
+  }
   if (!db.payments) {
     db.payments = [];
     modified = true;
@@ -506,19 +485,92 @@ function ensureDbFile(): Database {
     }
   }
 
-  if (modified) {
+  if (modified && onSave) {
     try {
-      fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
+      onSave(db);
     } catch (_) {}
   }
   return db;
 }
 
-export function readDb(): Database {
+function ensureDbFile(): Database {
+  const dbPath = getDbFilePath();
+  const dir = path.dirname(dbPath);
+  try {
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  } catch (_) {}
+
+  if (!fs.existsSync(dbPath)) {
+    const initial: Database = {
+      superAdmin: { username: '', passwordHash: '' },
+      couples: [],
+      payments: [],
+      globalTextOverrides: {},
+    };
+    // Seed default demo couple into initial database
+    initial.couples.push({
+      id: 'demo',
+      loginId: 'demo',
+      passwordHash: '', // no direct login password (managed via superadmin)
+      isActive: true,
+      createdAt: new Date().toISOString(),
+      config: getDefaultConfig(),
+      packageName: 'Demo Selamanya',
+      expiresAt: new Date(Date.now() + 3650 * 24 * 60 * 60 * 1000).toISOString(), // 10 years
+      statusMode: 'on',
+      mustChangePassword: false,
+    });
+    try { fs.writeFileSync(dbPath, JSON.stringify(initial, null, 2)); } catch (_) {}
+    return initial;
+  }
+
+  let db: Database;
+  try {
+    db = JSON.parse(fs.readFileSync(dbPath, 'utf-8')) as Database;
+  } catch (e) {
+    db = {
+      superAdmin: { username: '', passwordHash: '' },
+      couples: [],
+      payments: [],
+      globalTextOverrides: {},
+    };
+  }
+
+  return sanitizeAndUpgradeDb(db, (updated) => {
+    try {
+      fs.writeFileSync(dbPath, JSON.stringify(updated, null, 2));
+    } catch (_) {}
+  });
+}
+
+export async function readDb(): Promise<Database> {
+  const redis = getRedisClient();
+  if (redis) {
+    try {
+      let db = await redis.get<Database>(REDIS_KEY);
+      if (!db || typeof db !== 'object') {
+        db = ensureDbFile();
+        await redis.set(REDIS_KEY, db);
+      }
+      return sanitizeAndUpgradeDb(db, async (updatedDb) => {
+        await redis.set(REDIS_KEY, updatedDb);
+      });
+    } catch (err) {
+      console.error('Redis read error, falling back to local file:', err);
+    }
+  }
   return ensureDbFile();
 }
 
-export function writeDb(db: Database): void {
+export async function writeDb(db: Database): Promise<void> {
+  const redis = getRedisClient();
+  if (redis) {
+    try {
+      await redis.set(REDIS_KEY, db);
+    } catch (err) {
+      console.error('Redis write error:', err);
+    }
+  }
   const targetPath = getDbFilePath();
   try {
     const dir = path.dirname(targetPath);
@@ -540,12 +592,12 @@ export function getDefaultConfig(): WeddingConfig {
   return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
 }
 
-export function getCoupleById(id: string): Couple | undefined {
-  const db = readDb();
+export async function getCoupleById(id: string): Promise<Couple | undefined> {
+  const db = await readDb();
   return db.couples.find(c => c.id === id);
 }
 
-export function getCoupleByLoginId(loginId: string): Couple | undefined {
-  const db = readDb();
+export async function getCoupleByLoginId(loginId: string): Promise<Couple | undefined> {
+  const db = await readDb();
   return db.couples.find(c => c.loginId === loginId);
 }
