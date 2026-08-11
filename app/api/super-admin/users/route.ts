@@ -20,11 +20,12 @@ export async function GET() {
   const users = [];
 
   // Superadmin User
-  if (db.superAdmin?.username) {
+  const adminUsername = db.superAdmin?.username || process.env.SUPERADMIN_USERNAME || 'admin';
+  if (adminUsername) {
     users.push({
       id: 'superadmin',
       role: 'superadmin',
-      username: db.superAdmin.username,
+      username: adminUsername,
       displayName: 'Super Admin',
       isActive: true,
       createdAt: null,
